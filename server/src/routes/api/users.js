@@ -49,4 +49,37 @@ usersRouter.get("/:user_id", async function (req, res) {
   );
 });
 
+ //Get all users
+usersRouter.get("/", function(req, res) {
+   connection.query(
+     "SELECT * FROM `user`",
+     function(error, results) {
+       if(error){
+         console.log(error);
+         res.status(500).send({message:"There was an error connecting to the database: ", error });
+       }
+       console.log("Database query successful: ", results)
+       res.status(200).json(results);
+     }
+   );
+ });
+
+ //Delete user
+usersRouter.delete("/", async function(req, res) {
+
+  const {user_id, password} = req.body;
+  const encryptedPassword = await bcrypt.hash(password, saltRounds);
+  connection.query(
+    "DELETE FROM `user` WHERE user_id = ?", [user_id],
+    function(error, results) {
+      if(error){
+        console.log(error);
+        res.status(500).send({message:"There was an error connecting to the database: ", error });
+      }
+      console.log("User deleted successfully: ", results)
+      res.status(200).json({results, message: "User deleted successfully"});
+    }
+  );
+});
+
 export default usersRouter;
