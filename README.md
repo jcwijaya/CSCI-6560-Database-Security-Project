@@ -40,6 +40,17 @@ Also you will need to whitelist your computer's public ip address so that GCP wi
 
 Run `npm run dev` to start up the server. You can now make http POST requests to [http:localhost:5000/api/users](http:localhost:5000/api/users) with a request body that includes `{password: -, first_name: -, last_name: -}` to add a row to the `user` table. The response will return the generated user id that you can then use to query for the user's information by sending a GET to [http:localhost:5000/api/users/{user_id}](http:localhost:5000/api/users/user_id)
 
+## Authentication
+
+Most endpoints require authentication before they are authorized for use. This project uses [JSON web tokens](https://jwt.io/) to acheive this. The following endpoints are associated with authentication:
+
+| Method | Endpoint  | Required Content                                               |
+| ------ | --------- | -------------------------------------------------------------- |
+| POST   | /api/auth | in body: `{"email": "your_email", "password":"your_password"}` |
+| GET    | /api/auth | in headers: `{"x-auth-token:"your_json-web-token"}`            |
+
+NOTE: Each "private" endpoint must include a valid JSON web token in the headers as `{"x-auth-token:"your_json-web-token"}`. The [auth middleware](/server/src/middlewares/auth.js) is used for each private request to decode the token and get the associated user data.
+
 ## Adding Files to the Default Bucket and Creating New Buckets
 
 The server runs locally on [http:localhost:5000](http:localhost:5000). Here are the current supported requests related to file uploads and bucket creation:
