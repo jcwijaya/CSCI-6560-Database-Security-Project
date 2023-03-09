@@ -42,7 +42,15 @@ Run `npm run dev` to start up the server. You can now make http POST requests to
 
 ## Authentication
 
-Most endpoints require authentication before they are authorized for use. This project uses [JSON web tokens](https://jwt.io/) to acheive this. The following endpoints are associated with authentication:
+Most endpoints require authentication before they are authorized for use. This project uses [JSON web tokens](https://jwt.io/) to acheive this. Add a `JWT_SECRET` to the server .env file:
+
+```sh
+
+JWT_SECRET= your_jwt_secret
+
+```
+
+The following endpoints are associated with authentication:
 
 | Method | Endpoint  | Required Content                                               |
 | ------ | --------- | -------------------------------------------------------------- |
