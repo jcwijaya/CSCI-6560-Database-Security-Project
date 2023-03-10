@@ -13,7 +13,7 @@ const authRouter = express.Router();
 authRouter.get("/", auth, async (req, res) => {
   try {
     const query = `SELECT * FROM user WHERE user_id = ?`;
-    const valuesArr = [req.user.id];
+    const valuesArr = [req.user.user_id];
     connection.query(query, valuesArr, async (err, results) => {
       if (results && results.length > 0) {
         const { password, ...cleanedResult } = results[0];
@@ -57,7 +57,7 @@ authRouter.post("/", async (req, res) => {
 
       const payload = {
         user: {
-          id: results[0].user_id,
+          user_id: results[0].user_id,
         },
       };
 
