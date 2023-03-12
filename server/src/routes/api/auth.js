@@ -31,7 +31,6 @@ authRouter.get("/", auth, async (req, res) => {
 // @access   PUBLIC
 authRouter.post("/", async (req, res) => {
   const { email, password } = req.body;
-  console.log(password);
 
   const valuesArr = [email];
 
@@ -44,8 +43,6 @@ authRouter.post("/", async (req, res) => {
           .status(400)
           .json({ errors: [{ msg: "Invalid credentials" }] });
       }
-
-      console.log(results);
 
       const isMatch = await bcrypt.compare(password, results[0].password);
 
