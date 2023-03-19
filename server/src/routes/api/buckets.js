@@ -2,6 +2,7 @@ import express from "express";
 import createBucket from "../../services/bucketCreator.js";
 import connection from "../../services/database.js";
 import auth from "../../middlewares/auth.js";
+import { BucketRole } from "../../models/enums/Roles.js";
 
 const bucketsRouter = express.Router();
 
@@ -33,7 +34,7 @@ bucketsRouter.post("/", auth, async (req, res) => {
   try {
     connection.query(
       "INSERT INTO bucket_user VALUES (?, ?, ?)",
-      [bucket_name, user_id, "OWNER"],
+      [bucket_name, user_id, BucketRole.OWNER.string],
       function (error, results) {
         if (error) {
           console.log("Database error: ", error);
@@ -62,7 +63,7 @@ bucketsRouter.post("/", auth, async (req, res) => {
 bucketsRouter.get("/", function (req, res) {
   connection.query(
     "SELECT * FROM bucket_user WHERE bucket_role = ?",
-    "OWNER",
+    BucketRole.OWNER.string,
     function (error, results) {
       if (error) {
         console.log(error);
