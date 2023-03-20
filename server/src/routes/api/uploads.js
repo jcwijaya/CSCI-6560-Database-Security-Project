@@ -35,6 +35,7 @@ uploadsRouter.post("/", async (req, res) => {
   console.log("File upload attempted:");
   console.log(req.file);
   try {
+
     const fileUrl = await uploader(req.file);
     res.status(200).json({ message: "File upload successful", data: fileUrl });
   } catch (err) {
