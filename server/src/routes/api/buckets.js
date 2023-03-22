@@ -2,6 +2,7 @@ import express from "express";
 import createBucket from "../../services/bucketCreator.js";
 import connection from "../../services/database.js";
 import auth from "../../middlewares/auth.js";
+import roleAuth from "../../middlewares/roleAuth.js";
 import { BucketRole } from "../../models/enums/Roles.js";
 
 const bucketsRouter = express.Router();
@@ -92,5 +93,12 @@ bucketsRouter.get("/bucket-roles", function (req, res) {
     res.status(200).json(results);
   });
 });
+
+// @route    POST api/buckets/bucket-roles
+// @desc     add user to bucket with specific role
+// @access   PRIVATE
+
+// TODO: FINISH- need to first finish refactoring roleAuth middleware
+bucketsRouter.post("/bucket-roles", auth, roleAuth, async (req, res) => {});
 
 export default bucketsRouter;
