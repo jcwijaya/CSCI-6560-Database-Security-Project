@@ -1,16 +1,46 @@
-import { BucketRole } from "../models/enums/Roles.js";
+import { BucketRole, FileRole } from "../models/enums/Roles.js";
+import { Action } from "../models/enums/Actions.js";
 import connection from "../services/database.js";
 
-const roleAuth = async (action, user_id, bucket_id, fileName) => {
-  //use action to determine whether we need to check one or both tables for permissions
+// Middleware for bucket role verification-
+// use for any endpoint that needs to verify
+// a user's bucket role
+const roleAuth = async (req, res, next) => {
+  // Must know bucket for which to get user role
+  if (!req.body.bucket_id)
+    return res.status(400).json({
+      errors: [
+        {
+          msg: "Bucket id must be provided for role authorization.",
+        },
+      ],
+    });
+
+  // derive action from request and get permission value
+  const action = req.method + req.url;
+  console.log(action);
+  let requiredRole;
+  switch (action) {
+    case Action.ASSIGN_BUCKET_ROLE.endpoint:
+      console.log("Action matches assign bucket role endpoint");
+      requiredRole = Action.ASSIGN_BUCKET_ROLE.bucketRole.value;
+      break;
+  }
+  console.log(
+    `The minimum role requirement is ${requiredRole}- now need to check user role in DB.`
+  );
+
+  // query database to get role
+  // TODO: implement once we start using file roles
   try {
     let role = null;
-    let requiredRole = null;
-    if (Object.keys(action).includes("fileRole")) {
+    // if a fileName was included, also need to check file role
+    /*
+    if (req.body.fileName) {
       //query db for user's role for file
       await connection.query(
         "SELECT * FROM `file_user` WHERE file_name = ? AND bucket_id = ? AND user_id = ?",
-        [fileName, bucket_id, user_id],
+        [req.body.fileName, bucket_id, user_id],
         function (error, results) {
           if (error) {
             console.log(error);
@@ -21,45 +51,51 @@ const roleAuth = async (action, user_id, bucket_id, fileName) => {
         }
       );
       requiredRole = action.fileRole;
-    } else {
-      //query db for user's role for bucket
-      await connection.query(
-        "SELECT * FROM `bucket_user` WHERE bucket_id = ? AND user_id = ?",
-        [bucket_id, user_id],
-        function (error, results) {
-          if (error) {
-            console.log(error);
-            throw error;
-          }
-          console.log("Database query successful: ", results);
-          role = BucketRole[results[0].bucket_role];
-        }
-      );
-      requiredRole = action.bucketRole;
-    }
+    } else {}
+      */
 
-    return role.value >= requiredRole.value ? true : false;
+    //query db for user's role for bucket
+    await connection.query(
+      "SELECT * FROM `bucket_user` WHERE bucket_id = ? AND user_id = ?",
+      [req.body.bucket_id, req.user.user_id],
+      function (error, results) {
+        if (error) {
+          throw error;
+        }
+        if (results.length !== 1)
+          return res.status(400).json({
+            errors: [
+              {
+                msg: "Bad request- no role result received.",
+              },
+            ],
+          });
+        console.log("Database query successful: ", results);
+        role = BucketRole[results[0].bucket_role];
+        console.log(role);
+        if (role.value >= requiredRole) {
+          console.log("Bucket role verified- action approved.");
+          next();
+        } else {
+          return res.status(403).json({
+            errors: [
+              {
+                msg: `Unauthorized to perform bucket action.`,
+              },
+            ],
+          });
+        }
+      }
+    );
   } catch (err) {
-    res.status(401).json({
+    return res.status(401).json({
       errors: [
         {
-          msg: `Error occurred while authorizing action ${action} for user ${user_id}, error: ${err}`,
+          msg: `Error occurred while authorizing action ${action} for user ${req.user.user_id}, error: ${err}`,
         },
       ],
     });
   }
-};
-
-// TODO: Finish refactor for middleware compatibility
-const roleAuth_ = async (req, res, next) => {
-  if (!req.body.bucket_id || !req.body.action)
-    return res.status(400).json({
-      errors: [
-        {
-          msg: "Bucket id and action must be provided for role authorization.",
-        },
-      ],
-    });
 };
 
 export default roleAuth;

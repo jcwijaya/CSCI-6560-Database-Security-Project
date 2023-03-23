@@ -97,8 +97,27 @@ bucketsRouter.get("/bucket-roles", function (req, res) {
 // @route    POST api/buckets/bucket-roles
 // @desc     add user to bucket with specific role
 // @access   PRIVATE
+bucketsRouter.post("/bucket-roles", auth, roleAuth, async (req, res) => {
+  const { bucket_id, targetUserId, targetRole } = req.body;
 
-// TODO: FINISH- need to first finish refactoring roleAuth middleware
-bucketsRouter.post("/bucket-roles", auth, roleAuth, async (req, res) => {});
+  if (!bucket_id || !targetUserId || !targetRole) {
+    return res.status(400).json({
+      errors: [
+        {
+          msg: "Bad request- please provide required information.",
+        },
+      ],
+    });
+  }
+
+  const query =
+    "INSERT INTO bucket_user(bucket_id, user_id, bucket_role) VALUES(?, ?, ?)";
+  const valuesArr = [bucket_id, targetUserId, targetRole];
+  await connection.query(query, valuesArr, (error, results) => {
+    if (error) throw error;
+    console.log(results);
+  });
+  return res.status(201).json(results);
+});
 
 export default bucketsRouter;
