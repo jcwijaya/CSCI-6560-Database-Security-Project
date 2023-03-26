@@ -31,6 +31,16 @@ uploadsRouter.use(multerMid.single("uploaded_file"));
 
 // Upload a new file to a bucket specified by "BUCKET_ID" in .env file.
 // This is to simply add a file to a bucket through http for testing purposes.
+// @route    PATCH /api/uploads
+// @desc     upload file into specified bucket (Action create file and update file)
+// @access   PRIVATE
+/* body parameters: 
+{
+  bucket_id: unique identifying name of bucket,
+  targetUserId: user_id in db that uniquely identifies user,
+  targetRole: string identifying new role for specified user (see models/enums/roles)
+}
+*/
 uploadsRouter.post("/", async (req, res) => {
   console.log("File upload attempted:");
   console.log(req.file);
