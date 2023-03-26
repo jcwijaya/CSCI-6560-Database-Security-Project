@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS file;
 CREATE TABLE file (
 	file_id varchar(45) NOT NULL,
 	bucket_id varchar(45) NOT NULL,
