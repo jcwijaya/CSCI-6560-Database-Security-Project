@@ -106,7 +106,10 @@ const roleAuth = async (req, res, next) => {
         case Action.UPDATE_BUCKET_ROLE.endpoint:
           // Check if user attempting to modify maintainer's role
           // OR make a user a maintainer
-          if (targetUserRole === BucketRole.MAINTAINER.value) {
+          if (
+            targetUserRole === BucketRole.MAINTAINER.value ||
+            req.body.targetRole === BucketRole.MAINTAINER.value
+          ) {
             requiredRole = Action.ASSIGN_MAINTAINER_ROLE.bucketRole.value;
           } else requiredRole = Action.ASSIGN_BUCKET_ROLE.bucketRole.value;
           console.log(
