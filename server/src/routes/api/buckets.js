@@ -97,6 +97,13 @@ bucketsRouter.get("/bucket-roles", function (req, res) {
 // @route    POST api/buckets/bucket-roles
 // @desc     add user to bucket with specific role
 // @access   PRIVATE
+/* body parameters: 
+{
+  bucket_id: unique identifying name of bucket,
+  targetUserId: user_id in db that uniquely identifies user,
+  targetRole: string identifying new role for specified user (see models/enums/roles)
+}
+*/
 bucketsRouter.post("/bucket-roles", auth, roleAuth, async (req, res) => {
   const { bucket_id, targetUserId, targetRole } = req.body;
 
@@ -118,6 +125,39 @@ bucketsRouter.post("/bucket-roles", auth, roleAuth, async (req, res) => {
     console.log(results);
   });
   return res.status(201).json(results);
+});
+
+// @route    PATCH api/buckets/bucket-roles
+// @desc     update user role in specific bucket
+// @access   PRIVATE
+/* body parameters: 
+{
+  bucket_id: unique identifying name of bucket,
+  targetUserId: user_id in db that uniquely identifies user,
+  targetRole: string identifying new role for specified user (see models/enums/roles)
+}
+*/
+bucketsRouter.patch("/bucket-roles", auth, roleAuth, async (req, res) => {
+  const { bucket_id, targetUserId, targetRole } = req.body;
+
+  if (!bucket_id || !targetUserId || !targetRole) {
+    return res.status(400).json({
+      errors: [
+        {
+          msg: "Bad request- please provide required information.",
+        },
+      ],
+    });
+  }
+
+  const query =
+    "UPDATE bucket_user SET bucket_role = ? WHERE bucket_id = ? AND user_id = ? ";
+  const valuesArr = [targetRole, bucket_id, targetUserId];
+  await connection.query(query, valuesArr, (error, results) => {
+    if (error) throw error;
+    console.log(results);
+    return res.status(201).json(results);
+  });
 });
 
 export default bucketsRouter;

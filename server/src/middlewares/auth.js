@@ -1,8 +1,13 @@
 import jwt from "jsonwebtoken";
 import secret from "../configs/secret.config.js";
-import { BucketRole } from "../models/enums/Roles.js";
-import connection from "../services/database.js";
 
+// Middleware needed for all private routes-
+// verifies JSON web token
+/* ADDS TO REQUEST:
+req.user {
+  user_id: 'user-id-in-db'
+}
+*/
 const auth = (req, res, next) => {
   const token = req.header("x-auth-token");
   if (!token)

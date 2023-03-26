@@ -36,12 +36,23 @@ export const Action = {
     bucketRole: BucketRole.MAINTAINER,
     endpoint: "POST/bucket-roles",
   },
+  //Update bucket role for user already participating in the bucket
+  UPDATE_BUCKET_ROLE: {
+    bucketRole: BucketRole.MAINTAINER,
+    endpoint: "PATCH/bucket-roles",
+  },
   //Revoke bucket role below MAINTAINER or file role below FILE_OWNER from user
   REVOKE_BUCKET_ROLE: {
     bucketRole: BucketRole.MAINTAINER,
   },
   ASSIGN_MAINTAINER_ROLE: {
     bucketRole: BucketRole.OWNER,
+    endpoint: "POST/bucket-roles",
+  },
+  //Update bucket role for user who is a maintainer already participating in the bucket
+  UPDATE_MAINTAINER_ROLE: {
+    bucketRole: BucketRole.OWNER,
+    endpoint: "PATCH/bucket-roles",
   },
   REVOKE_MAINTAINER_ROLE: {
     bucketRole: BucketRole.OWNER,
