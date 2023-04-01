@@ -45,23 +45,15 @@ uploadsRouter.use(multerMid.single("uploaded_file"));
 */
 //TODO: use roleAuth to check that user has permission to create file in this bucket
 //TODO: how to tell apart file creation vs file edit/overwrite???, just do query to check if file already exists???
-uploadsRouter.post("/", async (req, res) => {
-  console.log("File upload attempted:");
-  console.log(req.file);
-  try {
+uploadsRouter.post("/upload-file", async (req, res) => {
+
 
     //TODO: need to pass in the bucket_id to uploader too.
     //Need to insert row into file table, generate an id for file_id, how to get file version?
     //Need to insert user as the FILE_OWNER in the file_user table
-    const fileUrl = await uploader(req.file);
-    res.status(200).json({ message: "File upload successful", data: fileUrl });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).send("There was an error uploading the file");
-  }
-//----------------------------------------------------------------------------
 
   console.log("File upload attempted:");
+  console.log(req.file);
   const bucket_name = req.body.bucket_name;
   const user_id = req.user.user_id;
   const file = req.file;
@@ -73,6 +65,9 @@ uploadsRouter.post("/", async (req, res) => {
 
   try {
   //upload file here
+  const fileUrl = await uploader(bucket_name, req.file);
+
+  console.log("File upload successful: ", fileUrl)
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -81,7 +76,7 @@ uploadsRouter.post("/", async (req, res) => {
     });
   }
 
-  //TODO: Databse inserts
+  //TODO: Database inserts
   try {
     let file_id = uuidv1();
     //TODO: insert into file table with generate file id and version(generation number in metadata)
