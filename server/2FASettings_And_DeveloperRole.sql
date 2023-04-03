@@ -17,7 +17,7 @@
 
 
 #Load pam plugin for 2 factor auth
-INSTALL PLUGIN authentication_pam SONAME 'authentication_pam.so';
+INSTALL PLUGIN authentication_windows SONAME 'authentication_windows.dll';
 
 
 
