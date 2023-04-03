@@ -29,6 +29,7 @@ CREATE TABLE file (
 	file_name varchar(45) NOT NULL, 
     version varchar(60),
     isActive boolean,
+    upload_time timestamp,
     FOREIGN KEY (bucket_id) REFERENCES bucket_user(bucket_id) ON DELETE CASCADE,
 	PRIMARY KEY(file_id, bucket_id, version)
 );

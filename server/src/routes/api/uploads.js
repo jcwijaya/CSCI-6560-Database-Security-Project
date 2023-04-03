@@ -1,5 +1,7 @@
 import express from "express";
 import uploader from "../../services/uploader.js";
+import getMetadata from "../../services/fileMetadata.js";
+import connection from "../../services/database.js";
 import multer from "multer";
 import { v1 as uuidv1 } from "uuid";
 import { FileRole } from "../../models/enums/Roles.js";
@@ -33,38 +35,34 @@ uploadsRouter.use(multerMid.single("uploaded_file"));
 
 // Upload a new file to a bucket specified by "BUCKET_ID" in .env file.
 // This is to simply add a file to a bucket through http for testing purposes.
-// @route    POST /api/uploads
-// @desc     upload file into specified bucket (Action create file and update file)
+// @route    POST /api/uploads/create-file
+// @desc     upload file into specified bucket 
 // @access   PRIVATE
 /* body parameters: 
 {
-  bucket_id: unique identifying name of bucket,
-  targetUserId: user_id in db that uniquely identifies user,
-  targetRole: string identifying new role for specified user (see models/enums/roles)
+  bucket_name: unique identifying name of bucket,
+  user_id: 
 }
 */
 //TODO: use roleAuth to check that user has permission to create file in this bucket
-//TODO: how to tell apart file creation vs file edit/overwrite???, just do query to check if file already exists???
-uploadsRouter.post("/upload-file", async (req, res) => {
-
-
-    //TODO: need to pass in the bucket_id to uploader too.
-    //Need to insert row into file table, generate an id for file_id, how to get file version?
-    //Need to insert user as the FILE_OWNER in the file_user table
+//TODO: need to tell apart file creation vs file edit/overwrite, do query to check if file already exists
+uploadsRouter.post("/create-file", async (req, res) => {
 
   console.log("File upload attempted:");
-  console.log(req.file);
-  const bucket_name = req.body.bucket_name;
-  const user_id = req.user.user_id;
-  const file = req.file;
+  let bucket_name = req.body.bucket_name;
+  let user_id = req.body.user_id;
+  let file = req.file;
+  console.log("request: ", req.body);
+  console.log("bucket: ", bucket_name);
+  console.log("user: ", user_id);
+  console.log("file: ", file)
   if (user_id == null || bucket_name == null || file == null) {
     console.log("missing header, bucket_name, or file");
     return res.status(500).json({ error: "missing user_id, bucket_name, or file" });
   }
-  //TODO: may need to query DB to check if file exists already
 
   try {
-  //upload file here
+  //TODO: From fileUrl need to get file's name***
   const fileUrl = await uploader(bucket_name, req.file);
 
   console.log("File upload successful: ", fileUrl)
@@ -76,17 +74,22 @@ uploadsRouter.post("/upload-file", async (req, res) => {
     });
   }
 
-  //TODO: Database inserts
   try {
     let file_id = uuidv1();
+    //TODO: add error handling for this part
+    let metadata = await getMetadata(bucket_name, file.originalname.replace(/ /g, "_"));
+    console.log("metadata: ", metadata);
+   //NOTE: this generated id for version is just a placeholder. I will update it to get the actual generation number from gcp
+   let version = metadata.generation; 
     //TODO: insert into file table with generate file id and version(generation number in metadata)
+    //If we are doing an edit instead of create, must uncheck the isActive flag in the DB.
+    //Also should add a date column to file table
     connection.query(
-      "INSERT INTO file VALUES (?, ?, ?, ?, ?)",
-      [file_id, bucket_name, file_name, version, true],
+      "INSERT INTO file VALUES (?, ?, ?, ?, ?, ?)",
+      [file_id, bucket_name, file.originalname, version, true, new Date(metadata.timeCreated)],
       function (error, results) {
         if (error) {
           console.log("Database error: ", error);
-          //TODO: when trying to create bucket with nonexistent user_id it says successful when it is not
           return res.status(500).send({
             message: "There was an error connecting to the database: ",
             error,
@@ -96,7 +99,6 @@ uploadsRouter.post("/upload-file", async (req, res) => {
       }
     );
 
-    //TODO: insert user has owner of file into file_user
     connection.query(
       "INSERT INTO file_user VALUES (?, ?, ?)",
       [file_id, user_id, FileRole.FILE_OWNER.string],

@@ -13,7 +13,7 @@ export const Action = {
   },
   CREATE_FILE: {
     bucketRole: BucketRole.RESTRICTED_EDITOR,
-    endpoint: "POST/upload-file",
+    endpoint: "POST/create-file",
   },
   UPDATE_FILE: {
     bucketRole: BucketRole.EDITOR,
