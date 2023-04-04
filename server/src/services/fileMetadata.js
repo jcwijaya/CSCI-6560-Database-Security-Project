@@ -5,6 +5,7 @@ dotenv.config();
 
 const getMetadata = (bucket_id, fileName) =>
   new Promise( (resolve, reject) => {
+    console.log("retrieving metadata...")
     const bucket = gc.bucket(bucket_id);
     if (!fileName) reject("No file name received");
     console.log(fileName);
