@@ -3,6 +3,7 @@ import connection from "../../services/database.js";
 import storage from "../../configs/storage.config.js";
 import auth from "../../middlewares/auth.js";
 import roleAuth from "../../middlewares/roleAuth.js";
+import downloader from "../../services/downloader.js";
 
 const downloadsRouter = express.Router();
 
@@ -38,7 +39,7 @@ downloadsRouter.get("/", auth, async (req, res) => {
       "SELECT * FROM file WHERE file_id=? AND bucket_id = ? and isActive = 1";
     valuesArr = [file_id, bucket_id];
   }
-  connection.query(query, valuesArr, (error, results) => {
+  connection.query(query, valuesArr, async (error, results) => {
     if (error) throw error;
 
     if (results.length < 1 || results.length > 2)
@@ -52,6 +53,13 @@ downloadsRouter.get("/", auth, async (req, res) => {
 
     console.log("Download possible. Results:");
     console.log(results);
+    const fileName = results[0].file_name;
+
+    await downloader(
+      bucket_id,
+      fileName,
+      "C:\\Users\\krdub\\Downloads\\" + fileName
+    );
 
     return res.status(201).json({
       results,

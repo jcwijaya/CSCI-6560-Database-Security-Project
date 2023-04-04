@@ -1,4 +1,4 @@
-import storage from "../configs/storage.config";
+import storage from "../configs/storage.config.js";
 
 // download service for google cloud storage
 // generation number can be provided to download inactive version of file
