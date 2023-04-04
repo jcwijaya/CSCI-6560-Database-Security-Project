@@ -9,8 +9,11 @@ const createBucket = async (name) => {
     location: LOCATION,
     storageClass: STORAGECLASS,
     autoclass: AUTOCLASS,
-    versioning: VERSIONING,
+    versioning: {
+      enabled: true,
+    },
   });
+
   console.log(bucket);
   return {
     success: true,
