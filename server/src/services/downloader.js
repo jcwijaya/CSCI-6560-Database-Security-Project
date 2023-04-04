@@ -5,24 +5,26 @@ import storage from "../configs/storage.config.js";
 const downloader = async (
   bucketName,
   fileName,
-  destFileName,
+  destPath,
   generation = null
 ) => {
   // all params required
-  if (!bucketName || !fileName || !destFileName) {
+  if (!bucketName || !fileName || !destPath) {
     throw new Error({
       msg: "please provide bucket name, file name, and destination",
     });
   }
 
   const options = {
-    destination: destFileName,
+    destination: destPath + fileName,
   };
 
   // download file
   await storage.bucket(bucketName).file(fileName).download(options);
 
-  console.log(`gs://${bucketName}/${fileName} downloaded to ${destFileName}.`);
+  console.log(
+    `gs://${bucketName}/${fileName} downloaded to ${destPath + fileName}.`
+  );
 };
 
 export default downloader;

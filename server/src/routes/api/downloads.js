@@ -14,6 +14,7 @@ const downloadsRouter = express.Router();
 {
   file_id
   bucket_id
+  destPath: full path for destination folder- must include trailing slash
   version?: unique version identifier for a file. Only needed if 
     user is trying to download inactive version of a file.
 }
@@ -26,7 +27,12 @@ downloadsRouter.get("/", auth, async (req, res) => {
   // get necessary body parameters- only need version if user is trying
   // to download inactive version of a file
   let version = req.body?.version;
-  const { file_id, bucket_id } = req.body;
+  const { file_id, bucket_id, destPath } = req.body;
+
+  if (!destPath)
+    return res.status(400).json({
+      msg: "Bad request- please provide destination path.",
+    });
 
   // Query database to check for validity
   let query, valuesArr;
@@ -55,18 +61,18 @@ downloadsRouter.get("/", auth, async (req, res) => {
     console.log(results);
     const fileName = results[0].file_name;
 
-    await downloader(
-      bucket_id,
-      fileName,
-      "C:\\Users\\krdub\\Downloads\\" + fileName
-    );
-
+    try {
+      await downloader(bucket_id, fileName, destPath);
+    } catch (err) {
+      console.log(err);
+      return res.status(400).json({
+        msg: "Bad request- please check destination path.",
+      });
+    }
     return res.status(201).json({
       results,
     });
   });
-
-  // TODO: Call downloader service to download file from bucket
 });
 
 export default downloadsRouter;
