@@ -45,7 +45,7 @@ uploadsRouter.use(multerMid.single("uploaded_file"));
   uploaded_file: file to be uploaded in reqeust as multi part form data
 }
 */
-//TODO: this is still a work in progress
+
 uploadsRouter.post("/upload-file", async (req, res) => {
 
   console.log("File upload attempted:");
@@ -91,26 +91,9 @@ uploadsRouter.post("/upload-file", async (req, res) => {
     //Check if file already exists
     console.log("Checking if file exists...");
     fileData = await databaseQuery( "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?", [bucket_name, uploadedFileName])
-    // await connection.query(
-    //   "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?",
-    //   [bucket_name, uploadedFileName],
-    //   function (error, results) {
-    //     if (error) {
-    //       console.log(error);
-    //       res.status(500).send({
-    //         message: "There was an error connecting to the database: ",
-    //         error,
-    //       });
-    //     }
-    //     console.log("Database query successful: ", results);
-    //     fileData = results;
-    //     console.log("result length: ", fileData.length);
-    //   }
-    // );
 
     let action = null;
     console.log("fileData", fileData);
-    //TODO: organize this better into separate functions with try catches in each
     if(fileData === null || fileData.length === 0){
       action = Action.CREATE_FILE;
       console.log("Action is CREATE_FILE");
@@ -140,38 +123,8 @@ async function createFile(uploadedFileName, metadata, bucket_name, user_id){
     [file_id, bucket_name, uploadedFileName, metadata.generation, true, new Date(metadata.timeCreated)]);
     console.log("Database insert successful for file: ", file_id, bucket_name, uploadedFileName);
 
-    // connection.query(
-    //   "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
-    //   [file_id, bucket_name, uploadedFileName, metadata.generation, true, new Date(metadata.timeCreated)],
-    //   function (error, results) {
-    //     if (error) {
-    //       console.log("Database error: ", error);
-    //       return res.status(500).send({
-    //         message: "There was an error connecting to the database: ",
-    //         error,
-    //       });
-    //     }
-    //     console.log("Database insert successful for file: ", file_id, bucket_name, uploadedFileName);
-    //   }
-    // );
-
     await databaseQuery("INSERT INTO `file_user` VALUES (?, ?, ?)", [file_id, user_id, FileRole.FILE_OWNER.string]);
     console.log("Database insert successful for user file role ", user_id, file_id, FileRole.FILE_OWNER.string );
-
-    // connection.query(
-    //   "INSERT INTO `file_user` VALUES (?, ?, ?)",
-    //   [file_id, user_id, FileRole.FILE_OWNER.string],
-    //   function (error, results) {
-    //     if (error) {
-    //       console.log("Database error: ", error);
-    //       return res.status(500).send({
-    //         message: "There was an error connecting to the database: ",
-    //         error,
-    //       });
-    //     }
-    //     console.log("Database insert successful for user file role ", user_id, file_id, FileRole.FILE_OWNER.string );
-    //   }
-    // );
   }
   catch(err){
     console.log(err);
@@ -182,45 +135,14 @@ async function createFile(uploadedFileName, metadata, bucket_name, user_id){
 async function updateFile(uploadedFileName, metadata, bucket_name, fileData){
  try{
   let file_id = fileData[0].file_id;
-  //update file table: make isActive false for existing rows for this file 
-  //insert new row with isActive=true
 
+  //update file table: make isActive false for existing rows for this file
   await databaseQuery("UPDATE `file` SET isActive = false WHERE file_id = ? and isActive = true", [file_id]);
   console.log("Database update successful");
-
-  // connection.query(
-  //   "UPDATE `file` SET isActive = false WHERE file_id = ? and isActive = true",
-  //   [file_id],
-  //   function (error, results) {
-  //     if (error) {
-  //       console.log("Database error: ", error);
-  //       return res.status(500).send({
-  //         message: "There was an error connecting to the database: ",
-  //         error,
-  //       });
-  //     }
-  //     console.log("Database update successful");
-  //   }
-  // );
 
   await databaseQuery( "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
   [file_id, bucket_name, uploadedFileName, metadata.generation, true, new Date(metadata.timeCreated)]);
   console.log("Database insert successful for file ", file_id, bucket_name, uploadedFileName);
-
-  // connection.query(
-  //   "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
-  //   [file_id, bucket_name, uploadedFileName, metadata.generation, true, new Date(metadata.timeCreated)],
-  //   function (error, results) {
-  //     if (error) {
-  //       console.log("Database error: ", error);
-  //       return res.status(500).send({
-  //         message: "There was an error connecting to the database: ",
-  //         error,
-  //       });
-  //     }
-  //     console.log("Database insert successful for file ", file_id, bucket_name, uploadedFileName);
-  //   }
-  // );
 }
   catch(err){
     console.log(err);
