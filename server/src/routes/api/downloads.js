@@ -4,6 +4,7 @@ import storage from "../../configs/storage.config.js";
 import auth from "../../middlewares/auth.js";
 import roleAuth from "../../middlewares/roleAuth.js";
 import downloader from "../../services/downloader.js";
+import fileRoleAuth from "../../middlewares/fileRoleAuth.js";
 
 const downloadsRouter = express.Router();
 
@@ -23,7 +24,7 @@ const downloadsRouter = express.Router();
 //TODO: Route through roleAuth middleware once uploads implemented-
 //  potentially will have separate role authorization middleware
 //  whenever target user not involved, like in this case.
-downloadsRouter.get("/", auth, async (req, res) => {
+downloadsRouter.get("/", auth, fileRoleAuth, async (req, res) => {
   // get necessary body parameters- only need version if user is trying
   // to download inactive version of a file
   let version = req.body?.version;
