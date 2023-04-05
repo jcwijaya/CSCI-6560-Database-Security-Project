@@ -12,6 +12,7 @@ const authRouter = express.Router();
 // @access   PRIVATE
 authRouter.get("/", auth, async (req, res) => {
   try {
+    console.log("Request: ", req.header, req.body);
     const query = `SELECT * FROM user WHERE user_id = ?`;
     const valuesArr = [req.user.user_id];
     connection.query(query, valuesArr, async (err, results) => {

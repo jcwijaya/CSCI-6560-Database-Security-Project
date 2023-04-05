@@ -13,10 +13,12 @@ export const Action = {
   },
   CREATE_FILE: {
     bucketRole: BucketRole.RESTRICTED_EDITOR,
+    endpoint: "POST/upload-file",
   },
   UPDATE_FILE: {
     bucketRole: BucketRole.EDITOR,
     fileRole: FileRole.FILE_EDITOR,
+    endpoint: "POST/upload-file",
   },
   SOFT_DELETE_FILE: {
     bucketRole: BucketRole.MAINTAINER,
