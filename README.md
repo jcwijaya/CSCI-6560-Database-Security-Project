@@ -18,7 +18,7 @@ You also need to create a [GCP service account](https://cloud.google.com/iam/doc
 
 Download the JSON key, and put this under [configs](/server/src/configs) directory as `key.json`.
 
-Run `npm run dev` to start up the server.
+Run `npm run dev` to start up the server. The server runs locally on [http:localhost:5000](http:localhost:5000).
 
 ## Database Setup
 
@@ -52,20 +52,26 @@ JWT_SECRET= your_jwt_secret
 
 ```
 
-The following endpoints are associated with authentication:
+The following endpoints are associated with users and authentication:
 
 | Method | Endpoint  | Required Content                                               |
 | ------ | --------- | -------------------------------------------------------------- |
+| POST   | /api/users | in body: `{"email": "your_email", "first_name": "your_name", "last_name":"your_last_name", "password":"your_password", "phone_number":"your_phone_number"}` |
 | POST   | /api/auth | in body: `{"email": "your_email", "password":"your_password"}` |
-| GET    | /api/auth | in headers: `{"x-auth-token:"your_json-web-token"}`            |
+| GET    | /api/auth | in headers: `{"x-auth-token:"your_json_web_token"}`            |
 
 NOTE: Each "private" endpoint must include a valid JSON web token in the headers as `{"x-auth-token:"your_json-web-token"}`. The [auth middleware](/server/src/middlewares/auth.js) is used for each private request to decode the token and get the associated user data.
 
 ## Adding Files to the Default Bucket and Creating New Buckets
 
-The server runs locally on [http:localhost:5000](http:localhost:5000). Here are the current supported requests related to file uploads and bucket creation:
+Here are the current supported requests related to file uploads and bucket creation:
 
-| Method | Endpoint     | Body Content                                                                                                                         |
-| ------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| POST   | /api/uploads | `"uploaded_file": "your_file"` as [form-data](https://developer.mozilla.org/en-US/docs/Learn/Forms/Sending_and_retrieving_form_data) |
-| POST   | /api/buckets | `{"bucket_name:"your_bucket_name"}`                                                                                                  |
+NOTE: All of these endpoints must include a valid JSON web token in the headers as `{"x-auth-token:"your_json-web-token"}`- required for [auth middleware](/server/src/middlewares/auth.js). These requests will also require routing through [role auth middleware](/server/src/middlewares/roleAuth.js) or [file role auth middleware](/server/src/middlewares/fileRoleAuth.js). Role authorization is required when a target user is involved (like when updating a user's bucket role or assigning a user to a bucket) and file role authorization is required working with any files in a bucket (like when uploading or downloading)
+
+| Method | Endpoint     | Body Content |Action |
+| ------ | ------------ | -------------|-------|
+| POST   | /api/buckets | `{"bucket_name:"your_bucket_name"}`|Create a bucket|
+| POST   | /api/buckets/bucket-roles | `{"bucket_name:"your_bucket_name", "targetUserId":"id_of_target_user", "targetRole":"role_to_make_target_user" }`|Add a user to a bucket|
+| PATCH  | /api/buckets/bucket-roles | `{"bucket_name:"your_bucket_name", "targetUserId":"id_of_target_user", "targetRole":"role_to_make_target_user" }`|Update a user's bucket role|
+| POST  | /api/uploads/upload-file | `{"uploaded_file": "your_file_to_upload"` as [form-data](https://developer.mozilla.org/en-US/docs/Learn/Forms/Sending_and_retrieving_form_data),`"bucket_name": "your_bucket_name"}`|Upload a file to a bucket|
+| GET   | /api/downloads/download-file | `{"bucket_name:"your_bucket_name", "destPath": "full_file_destination_path_with_trailing_\", "file_id": "id_of_file_to_be_downloaded"}`|Download file|
