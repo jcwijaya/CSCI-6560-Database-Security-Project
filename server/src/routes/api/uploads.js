@@ -50,7 +50,7 @@ uploadsRouter.use(multerMid.single("uploaded_file"));
 uploadsRouter.post("/upload-file", auth, fileRoleAuth, async (req, res) => {
   // extract vars and log them
   console.log("File upload attempted:");
-  let bucket_name = req.body.bucket_id;
+  let bucket_name = req.body.bucket_name;
   let user_id = req.user.user_id;
   let file = req.file;
   let uploadedFileName = null;

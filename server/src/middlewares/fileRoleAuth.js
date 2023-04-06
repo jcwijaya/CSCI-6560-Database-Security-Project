@@ -11,7 +11,7 @@ const fileRoleAuth = async (req, res, next) => {
   // obtain user id attached to req from auth middleware
   const { user_id } = req.user;
   // Must know bucket for which to get user role
-  if (!req.body.bucket_id)
+  if (!req.body.bucket_name)
     return res.status(400).json({
       errors: [
         {
@@ -19,14 +19,14 @@ const fileRoleAuth = async (req, res, next) => {
         },
       ],
     });
-  const { bucket_id } = req.body;
+  const { bucket_name } = req.body;
 
   // derive action from request and get permission value
   const actionEndpoint = req.method + req.url;
 
   // query database to get requesting user's role
   const query = "SELECT * FROM bucket_user WHERE user_id = ? AND bucket_id = ?";
-  const valuesArr = [user_id, bucket_id];
+  const valuesArr = [user_id, bucket_name];
   await connection.query(query, valuesArr, (error, results) => {
     if (error) {
       return res.status(500).json({
@@ -37,6 +37,7 @@ const fileRoleAuth = async (req, res, next) => {
         ],
       });
     }
+    console.log(results);
     if (results.length !== 1) {
       return res.status(400).json({
         errors: [
@@ -49,7 +50,6 @@ const fileRoleAuth = async (req, res, next) => {
 
     const role = results[0].bucket_role;
     let requiredRole;
-    console.log(actionEndpoint);
     switch (actionEndpoint) {
       case Action.CREATE_FILE.endpoint:
         requiredRole = Action.CREATE_FILE.bucketRole.value;

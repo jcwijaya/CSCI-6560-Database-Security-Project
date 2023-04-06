@@ -14,7 +14,7 @@ const downloadsRouter = express.Router();
 /* body parameters: 
 {
   file_id
-  bucket_id
+  bucket_name
   destPath: full path for destination folder- must include trailing slash
   version?: unique version identifier for a file. Only needed if 
     user is trying to download inactive version of a file.
@@ -28,7 +28,7 @@ downloadsRouter.get("/download-file", auth, fileRoleAuth, async (req, res) => {
   // get necessary body parameters- only need version if user is trying
   // to download inactive version of a file
   let version = req.body?.version;
-  const { file_id, bucket_id, destPath } = req.body;
+  const { file_id, bucket_name, destPath } = req.body;
 
   if (!destPath)
     return res.status(400).json({
@@ -40,11 +40,11 @@ downloadsRouter.get("/download-file", auth, fileRoleAuth, async (req, res) => {
   if (version) {
     query =
       "SELECT * FROM file WHERE file_id= ? AND bucket_id = ? AND version = ?";
-    valuesArr = [file_id, bucket_id, version];
+    valuesArr = [file_id, bucket_name, version];
   } else {
     query =
       "SELECT * FROM file WHERE file_id=? AND bucket_id = ? and isActive = 1";
-    valuesArr = [file_id, bucket_id];
+    valuesArr = [file_id, bucket_name];
   }
   connection.query(query, valuesArr, async (error, results) => {
     if (error) throw error;
@@ -63,7 +63,7 @@ downloadsRouter.get("/download-file", auth, fileRoleAuth, async (req, res) => {
     const fileName = results[0].file_name;
 
     try {
-      await downloader(bucket_id, fileName, destPath);
+      await downloader(bucket_name, fileName, destPath);
     } catch (err) {
       console.log(err);
       return res.status(400).json({

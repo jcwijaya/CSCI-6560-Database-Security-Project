@@ -10,15 +10,15 @@ const roleAuth = async (req, res, next) => {
   // obtain user id attached to req from auth middleware
   const { user_id } = req.user;
   // Must know bucket for which to get user role
-  if (!req.body.bucket_id)
+  if (!req.body.bucket_name)
     return res.status(400).json({
       errors: [
         {
-          msg: "Bucket id must be provided for role authorization.",
+          msg: "Bucket name must be provided for role authorization.",
         },
       ],
     });
-  const { bucket_id } = req.body.user;
+  const { bucket_name } = req.body;
 
   // derive action from request and get permission value
   const actionEndpoint = req.method + req.url;
@@ -57,7 +57,7 @@ const roleAuth = async (req, res, next) => {
 
   await connection.query(
     "SELECT user_id, bucket_role FROM `bucket_user` WHERE user_id = ? OR user_id = ? AND bucket_id = ?",
-    [req.user.user_id, req.body.targetUserId, req.body.bucket_id],
+    [req.user.user_id, req.body.targetUserId, bucket_name],
     function (error, results) {
       if (error) {
         return res.status(500).json({
