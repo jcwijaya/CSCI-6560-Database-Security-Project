@@ -3,9 +3,12 @@ import { Action } from "../models/enums/Actions.js";
 import connection from "../services/database.js";
 
 // Middleware for any endpoint that needs to verify a user's bucket role.
+// Unlike "fileRoleAuth" this is used for endpoints that involve a target user
 // Must be used after regular auth middleware.
 // Queries database to determine if user role is >= role requirement for action.
 const roleAuth = async (req, res, next) => {
+  // obtain user id attached to req from auth middleware
+  const { user_id } = req.user;
   // Must know bucket for which to get user role
   if (!req.body.bucket_id)
     return res.status(400).json({
@@ -15,6 +18,7 @@ const roleAuth = async (req, res, next) => {
         },
       ],
     });
+  const { bucket_id } = req.body.user;
 
   // derive action from request and get permission value
   const actionEndpoint = req.method + req.url;
