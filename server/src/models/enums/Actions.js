@@ -10,6 +10,7 @@ export const Action = {
   VIEW_FILE: {
     bucketRole: BucketRole.VIEWER,
     fileRole: FileRole.FILE_VIEWER,
+    endpoint: "GET/download-file",
   },
   CREATE_FILE: {
     bucketRole: BucketRole.RESTRICTED_EDITOR,

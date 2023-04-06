@@ -8,7 +8,7 @@ import fileRoleAuth from "../../middlewares/fileRoleAuth.js";
 
 const downloadsRouter = express.Router();
 
-// @route    GET api/downloads
+// @route    GET api/downloads/download-file
 // @desc     download file from bucket ("read")
 // @access   PRIVATE
 /* body parameters: 
@@ -21,10 +21,10 @@ const downloadsRouter = express.Router();
 }
 */
 
-//TODO: Route through roleAuth middleware once uploads implemented-
+//TODO: Route through roleAuth middleware once uploads im"desaplemented-
 //  potentially will have separate role authorization middleware
 //  whenever target user not involved, like in this case.
-downloadsRouter.get("/", auth, fileRoleAuth, async (req, res) => {
+downloadsRouter.get("/download-file", auth, fileRoleAuth, async (req, res) => {
   // get necessary body parameters- only need version if user is trying
   // to download inactive version of a file
   let version = req.body?.version;
