@@ -16,21 +16,27 @@
 
 
 
-#Load pam plugin for 2 factor auth
+#Load windows plugin for 2 factor auth
 INSTALL PLUGIN authentication_windows SONAME 'authentication_windows.dll';
-
-
-
-
 #Set requirement for 2 factor authentication
 SET GLOBAL authentication_policy='caching_sha2_password,*,'; #1 * is defualt 2 *'s means  2 factor
 
 #Create role, assign all privelages to the role
 create role if not exists 'Developer';
-grant all on *.* to 'Developer';
+grant create role, create tablespace, create user, create view, grant option, process, reload, select, show databases, show view, shutdown on *.* to 'Developer';
 show grants for 'Developer';
-#Developer is now a role with ALL privelages
-
+#Developer is now a role with Select Privelages privelages
+#Create ROLE: Enable role creation.
+#Create TableSpace Enable tablespaces and log file groups to be created, altered, or dropped.
+#Create User Enable use of CREATE USER, DROP USER, RENAME USER, and REVOKE ALL PRIVILEGES
+#Create View Enable views to be created or altered
+#Grant option Enable privileges to be granted to or removed from other accounts
+#Process Enable the user to see all processes 
+# Reload Enable use of FLUSH operations
+#Select Use select to look at data
+#Show databases Enable SHOW DATABASES to show all databases
+#Show View Enable use of SHOW CREATE VIEW
+#Shutdown Enable use of mysqladmin shutdown. Level:
 #Create an account that has the developer role
 create user 'OriginalDevRole'@'localhost' identified by 'OGDevPass';
 #Grant Dev role to account
