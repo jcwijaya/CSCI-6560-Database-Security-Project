@@ -75,9 +75,47 @@ uploadsRouter.post("/upload-file", auth, fileRoleAuth, async (req, res) => {
     [bucket_name, uploadedFileName]
   );
 
-  console.log(fileData);
+  // If file does not already exist, attempt upload
+  if (fileData.length === 0) {
+    console.log("file does not exist- can be uploaded as new file");
 
-  return res.status(200).json(fileData);
+    try {
+      // upload file to bucket
+      const fileUrl = await uploader(bucket_name, req.file);
+      let urlArray = fileUrl.split("/");
+      uploadedFileName = urlArray[urlArray.length - 1];
+
+      console.log("File upload successful: ", fileUrl, uploadedFileName);
+
+      // get metadata for file (to have upload timestamp extracted)
+      metadata = await getMetadata(bucket_name, uploadedFileName);
+      console.log("Metadata was fetched successfully: ", metadata);
+
+      // file upload successful, so need to insert in database
+      try {
+        const insertResults = await createFile(
+          uploadedFileName,
+          metadata,
+          bucket_name,
+          user_id
+        );
+        return res.status(201).json(insertResults);
+      } catch (err) {
+        return res.status(500).json({
+          errors: err.errors,
+        });
+      }
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({
+        errors: err.errors,
+      });
+    }
+  }
+
+  return res.status(400).json({
+    msg: "Bad request- unable to upload file. The file might already be present in the bucket, in which case a file update is needed.",
+  });
 
   /*
   try {
@@ -149,24 +187,34 @@ uploadsRouter.post("/upload-file", auth, fileRoleAuth, async (req, res) => {
   */
 });
 
-async function createFile(uploadedFileName, metadata, bucket_name, user_id) {
+// Async function for handling insertion of file data in database.
+// This should be called after the file is uploaded into a bucket.
+// Commented out section of code is for handling file-specific roles-
+//    if this functionality is needed, then need to pass user_id as
+//    last parameter.
+async function createFile(uploadedFileName, metadata, bucket_name) {
   try {
     let file_id = uuidv1();
 
-    await databaseQuery("INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)", [
-      file_id,
-      bucket_name,
-      uploadedFileName,
-      metadata.generation,
-      true,
-      new Date(metadata.timeCreated),
-    ]);
+    const insertRes = await databaseQuery(
+      "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
+      [
+        file_id,
+        bucket_name,
+        uploadedFileName,
+        metadata.generation,
+        true,
+        new Date(metadata.timeCreated),
+      ]
+    );
     console.log(
       "Database insert successful for file: ",
       file_id,
       bucket_name,
       uploadedFileName
     );
+
+    return insertRes;
 
     // connection.query(
     //   "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
@@ -183,17 +231,17 @@ async function createFile(uploadedFileName, metadata, bucket_name, user_id) {
     //   }
     // );
 
-    await databaseQuery("INSERT INTO `file_user` VALUES (?, ?, ?)", [
-      file_id,
-      user_id,
-      FileRole.FILE_OWNER.string,
-    ]);
-    console.log(
-      "Database insert successful for user file role ",
-      user_id,
-      file_id,
-      FileRole.FILE_OWNER.string
-    );
+    // await databaseQuery("INSERT INTO `file_user` VALUES (?, ?, ?)", [
+    //   file_id,
+    //   user_id,
+    //   FileRole.FILE_OWNER.string,
+    // ]);
+    // console.log(
+    //   "Database insert successful for user file role ",
+    //   user_id,
+    //   file_id,
+    //   FileRole.FILE_OWNER.string
+    // );
 
     // connection.query(
     //   "INSERT INTO `file_user` VALUES (?, ?, ?)",
