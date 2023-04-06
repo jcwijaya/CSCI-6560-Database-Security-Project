@@ -51,11 +51,15 @@ const fileRoleAuth = async (req, res, next) => {
     let requiredRole;
     switch (actionEndpoint) {
       case Action.CREATE_FILE.endpoint:
-        requiredRole = Action.bucketRole.value;
+        requiredRole = Action.CREATE_FILE.bucketRole.value;
         break;
       case Action.VIEW_FILE.endpoint:
-        requiredRole = Action.bucketRole.value;
+        requiredRole = Action.VIEW_FILE.bucketRole.value;
         break;
+      default:
+        return res.status(500).json({
+          msg: "Uknown action.",
+        });
     }
 
     if (role < requiredRole) {

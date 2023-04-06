@@ -6,6 +6,8 @@ import multer from "multer";
 import { v1 as uuidv1 } from "uuid";
 import { FileRole } from "../../models/enums/Roles.js";
 import { Action } from "../../models/enums/Actions.js";
+import auth from "../../middlewares/auth.js";
+import fileRoleAuth from "../../middlewares/fileRoleAuth.js";
 
 const uploadsRouter = express.Router();
 
@@ -34,23 +36,22 @@ const multerMid = multer({
 
 uploadsRouter.use(multerMid.single("uploaded_file"));
 
-// This is to add a file to a bucket 
+// This is to add a file to a bucket
 // @route    POST /api/uploads/upload-file
-// @desc     upload file into specified bucket 
+// @desc     upload file into specified bucket
 // @access   PRIVATE
 /* body parameters: 
 {
   bucket_name: string,  unique identifying name of bucket,
-  user_id: string, unique id of user
   uploaded_file: file to be uploaded in reqeust as multi part form data
 }
 */
 //TODO: this is still a work in progress
-uploadsRouter.post("/upload-file", async (req, res) => {
-
+uploadsRouter.post("/upload-file", auth, fileRoleAuth, async (req, res) => {
+  // extract vars and log them
   console.log("File upload attempted:");
-  let bucket_name = req.body.bucket_name;
-  let user_id = req.body.user_id;
+  let bucket_name = req.body.bucket_id;
+  let user_id = req.user.user_id;
   let file = req.file;
   let uploadedFileName = null;
   let metadata = null;
@@ -58,12 +59,27 @@ uploadsRouter.post("/upload-file", async (req, res) => {
   console.log("request: ", req.body);
   console.log("bucket: ", bucket_name);
   console.log("user: ", user_id);
-  console.log("file: ", file)
+  console.log("file: ", file);
+
+  // check for necessary parameters
   if (user_id == null || bucket_name == null || file == null) {
     console.log("missing header, bucket_name, or file");
-    return res.status(500).json({ error: "missing user_id, bucket_name, or file" });
+    return res
+      .status(500)
+      .json({ error: "missing user_id, bucket_name, or file" });
   }
 
+  // query database to check if file exists (it shouldn't)
+  fileData = await databaseQuery(
+    "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?",
+    [bucket_name, uploadedFileName]
+  );
+
+  console.log(fileData);
+
+  return res.status(200).json(fileData);
+
+  /*
   try {
 
   const fileUrl = await uploader(bucket_name, req.file);
@@ -130,15 +146,27 @@ uploadsRouter.post("/upload-file", async (req, res) => {
     console.log(err);
     return res.status(500).json({ error: err });
   }
+  */
 });
 
-async function createFile(uploadedFileName, metadata, bucket_name, user_id){
-  try{
+async function createFile(uploadedFileName, metadata, bucket_name, user_id) {
+  try {
     let file_id = uuidv1();
 
-    await databaseQuery(  "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
-    [file_id, bucket_name, uploadedFileName, metadata.generation, true, new Date(metadata.timeCreated)]);
-    console.log("Database insert successful for file: ", file_id, bucket_name, uploadedFileName);
+    await databaseQuery("INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)", [
+      file_id,
+      bucket_name,
+      uploadedFileName,
+      metadata.generation,
+      true,
+      new Date(metadata.timeCreated),
+    ]);
+    console.log(
+      "Database insert successful for file: ",
+      file_id,
+      bucket_name,
+      uploadedFileName
+    );
 
     // connection.query(
     //   "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
@@ -155,8 +183,17 @@ async function createFile(uploadedFileName, metadata, bucket_name, user_id){
     //   }
     // );
 
-    await databaseQuery("INSERT INTO `file_user` VALUES (?, ?, ?)", [file_id, user_id, FileRole.FILE_OWNER.string]);
-    console.log("Database insert successful for user file role ", user_id, file_id, FileRole.FILE_OWNER.string );
+    await databaseQuery("INSERT INTO `file_user` VALUES (?, ?, ?)", [
+      file_id,
+      user_id,
+      FileRole.FILE_OWNER.string,
+    ]);
+    console.log(
+      "Database insert successful for user file role ",
+      user_id,
+      file_id,
+      FileRole.FILE_OWNER.string
+    );
 
     // connection.query(
     //   "INSERT INTO `file_user` VALUES (?, ?, ?)",
@@ -172,73 +209,85 @@ async function createFile(uploadedFileName, metadata, bucket_name, user_id){
     //     console.log("Database insert successful for user file role ", user_id, file_id, FileRole.FILE_OWNER.string );
     //   }
     // );
-  }
-  catch(err){
+  } catch (err) {
     console.log(err);
     return res.status(500).json({ error: err });
   }
 }
 
-async function updateFile(uploadedFileName, metadata, bucket_name, fileData){
- try{
-  let file_id = fileData[0].file_id;
-  //update file table: make isActive false for existing rows for this file 
-  //insert new row with isActive=true
+async function updateFile(uploadedFileName, metadata, bucket_name, fileData) {
+  try {
+    let file_id = fileData[0].file_id;
+    //update file table: make isActive false for existing rows for this file
+    //insert new row with isActive=true
 
-  await databaseQuery("UPDATE `file` SET isActive = false WHERE file_id = ? and isActive = true", [file_id]);
-  console.log("Database update successful");
+    await databaseQuery(
+      "UPDATE `file` SET isActive = false WHERE file_id = ? and isActive = true",
+      [file_id]
+    );
+    console.log("Database update successful");
 
-  // connection.query(
-  //   "UPDATE `file` SET isActive = false WHERE file_id = ? and isActive = true",
-  //   [file_id],
-  //   function (error, results) {
-  //     if (error) {
-  //       console.log("Database error: ", error);
-  //       return res.status(500).send({
-  //         message: "There was an error connecting to the database: ",
-  //         error,
-  //       });
-  //     }
-  //     console.log("Database update successful");
-  //   }
-  // );
+    // connection.query(
+    //   "UPDATE `file` SET isActive = false WHERE file_id = ? and isActive = true",
+    //   [file_id],
+    //   function (error, results) {
+    //     if (error) {
+    //       console.log("Database error: ", error);
+    //       return res.status(500).send({
+    //         message: "There was an error connecting to the database: ",
+    //         error,
+    //       });
+    //     }
+    //     console.log("Database update successful");
+    //   }
+    // );
 
-  await databaseQuery( "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
-  [file_id, bucket_name, uploadedFileName, metadata.generation, true, new Date(metadata.timeCreated)]);
-  console.log("Database insert successful for file ", file_id, bucket_name, uploadedFileName);
+    await databaseQuery("INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)", [
+      file_id,
+      bucket_name,
+      uploadedFileName,
+      metadata.generation,
+      true,
+      new Date(metadata.timeCreated),
+    ]);
+    console.log(
+      "Database insert successful for file ",
+      file_id,
+      bucket_name,
+      uploadedFileName
+    );
 
-  // connection.query(
-  //   "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
-  //   [file_id, bucket_name, uploadedFileName, metadata.generation, true, new Date(metadata.timeCreated)],
-  //   function (error, results) {
-  //     if (error) {
-  //       console.log("Database error: ", error);
-  //       return res.status(500).send({
-  //         message: "There was an error connecting to the database: ",
-  //         error,
-  //       });
-  //     }
-  //     console.log("Database insert successful for file ", file_id, bucket_name, uploadedFileName);
-  //   }
-  // );
-}
-  catch(err){
+    // connection.query(
+    //   "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
+    //   [file_id, bucket_name, uploadedFileName, metadata.generation, true, new Date(metadata.timeCreated)],
+    //   function (error, results) {
+    //     if (error) {
+    //       console.log("Database error: ", error);
+    //       return res.status(500).send({
+    //         message: "There was an error connecting to the database: ",
+    //         error,
+    //       });
+    //     }
+    //     console.log("Database insert successful for file ", file_id, bucket_name, uploadedFileName);
+    //   }
+    // );
+  } catch (err) {
     console.log(err);
     return res.status(500).json({ error: err });
   }
 }
 
-function databaseQuery(query, params){
+function databaseQuery(query, params) {
   return new Promise((resolve, reject) => {
     connection.query(query, params, (err, results) => {
       if (err) {
         console.log("Database error: ", err);
-        reject(err); 
+        reject(err);
       }
       console.log("Query results: ", results);
       resolve(results);
-    })
-  })
+    });
+  });
 }
 
 export default uploadsRouter;
