@@ -177,7 +177,6 @@ bucketsRouter.patch("/bucket-roles", auth, roleAuth, async (req, res) => {
   targetRole: string identifying role to be revoked from specified user (see models/enums/roles)
 }
 */
-//TODO: need to update roleAuth
 bucketsRouter.delete("/bucket-roles", auth, roleAuth, async (req, res) => {
   const { bucket_name, targetUserId, targetRole } = req.body;
 

@@ -62,33 +62,7 @@ const roleAuth = async (req, res, next) => {
     let query = "SELECT user_id, bucket_role, bucket_id FROM `bucket_user` WHERE (user_id = ? AND bucket_id = ?) OR (user_id = ? AND bucket_id = ?)";
     let params = [req.user.user_id, bucket_name, req.body.targetUserId, bucket_name];
     let queryResults = await databaseQuery(query, params);
-  //   await connection.query(
-  //  // "SELECT user_id, bucket_role FROM `bucket_user` WHERE user_id = ? OR user_id = ? AND bucket_id = ?",
-  //  "SELECT user_id, bucket_role, bucket_id FROM `bucket_user` WHERE (user_id = ? AND bucket_id = ?) OR (user_id = ? AND bucket_id = ?)",
-  //   [req.user.user_id, bucket_name, req.body.targetUserId, bucket_name],
-  //   function (error, results) {
-  //     if (error) {
-  //       return res.status(500).json({
-  //         errors: [
-  //           {
-  //             msg: "Database query error.",
-  //           },
-  //         ],
-  //       });
-  //     }
-  //     queryResults = results;
-  //     console.log("Results for user and target user's roles: ", results);
-  //     if (results.length < 1 || results.length > 2)
-  //       return res.status(400).json({
-  //         errors: [
-  //           {
-  //             msg: "Bad request- invalid number of results received.",
-  //           },
-  //         ],
-  //       });
-  //     console.log("Database query successful: ", results);
-     
-  //   });
+ 
     console.log("Results for user and target user's roles: ", queryResults);
     if (queryResults.length < 1 || queryResults.length > 2)
       return res.status(400).json({
@@ -98,8 +72,6 @@ const roleAuth = async (req, res, next) => {
           },
         ],
       });
-      //return res.status(200).json(results);
-      //TODO: Add check for when user trying to assign role a user already has
 
       let reqUserRole,
       targetUserRole = null;
