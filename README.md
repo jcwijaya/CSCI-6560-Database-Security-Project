@@ -73,5 +73,6 @@ NOTE: All of these endpoints must include a valid JSON web token in the headers 
 | POST   | /api/buckets | `{"bucket_name:"your_bucket_name"}`|Create a bucket|
 | POST   | /api/buckets/bucket-roles | `{"bucket_name:"your_bucket_name", "targetUserId":"id_of_target_user", "targetRole":"role_to_make_target_user" }`|Add a user to a bucket|
 | PATCH  | /api/buckets/bucket-roles | `{"bucket_name:"your_bucket_name", "targetUserId":"id_of_target_user", "targetRole":"role_to_make_target_user" }`|Update a user's bucket role|
+| DELETE  | /api/buckets/bucket-roles | `{"bucket_name:"your_bucket_name", "targetUserId":"id_of_target_user", "targetRole":"role_to_make_target_user" }`|Revoke a user's bucket role|
 | POST  | /api/uploads/upload-file | `{"uploaded_file": "your_file_to_upload"` as [form-data](https://developer.mozilla.org/en-US/docs/Learn/Forms/Sending_and_retrieving_form_data),`"bucket_name": "your_bucket_name"}`|Upload a file to a bucket|
 | GET   | /api/downloads/download-file | `{"bucket_name:"your_bucket_name", "destPath": "full_file_destination_path_with_trailing_\", "file_id": "id_of_file_to_be_downloaded"}`|Download file|
