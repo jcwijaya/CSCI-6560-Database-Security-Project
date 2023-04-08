@@ -42,7 +42,7 @@ const fileRoleAuth = async (req, res, next) => {
       return res.status(400).json({
         errors: [
           {
-            msg: "Bad request- invalid query results.",
+            msg: `User's role not found in bucket ${bucket_name}`,
           },
         ],
       });

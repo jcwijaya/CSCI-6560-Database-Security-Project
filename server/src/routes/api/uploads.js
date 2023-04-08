@@ -216,21 +216,6 @@ async function createFile(uploadedFileName, metadata, bucket_name) {
 
     return insertRes;
 
-    // connection.query(
-    //   "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
-    //   [file_id, bucket_name, uploadedFileName, metadata.generation, true, new Date(metadata.timeCreated)],
-    //   function (error, results) {
-    //     if (error) {
-    //       console.log("Database error: ", error);
-    //       return res.status(500).send({
-    //         message: "There was an error connecting to the database: ",
-    //         error,
-    //       });
-    //     }
-    //     console.log("Database insert successful for file: ", file_id, bucket_name, uploadedFileName);
-    //   }
-    // );
-
     // await databaseQuery("INSERT INTO `file_user` VALUES (?, ?, ?)", [
     //   file_id,
     //   user_id,
@@ -304,21 +289,6 @@ async function updateFile(uploadedFileName, metadata, bucket_name, fileData) {
       bucket_name,
       uploadedFileName
     );
-
-    // connection.query(
-    //   "INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)",
-    //   [file_id, bucket_name, uploadedFileName, metadata.generation, true, new Date(metadata.timeCreated)],
-    //   function (error, results) {
-    //     if (error) {
-    //       console.log("Database error: ", error);
-    //       return res.status(500).send({
-    //         message: "There was an error connecting to the database: ",
-    //         error,
-    //       });
-    //     }
-    //     console.log("Database insert successful for file ", file_id, bucket_name, uploadedFileName);
-    //   }
-    // );
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: err });

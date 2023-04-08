@@ -47,6 +47,7 @@ export const Action = {
   //Revoke bucket role below MAINTAINER or file role below FILE_OWNER from user
   REVOKE_BUCKET_ROLE: {
     bucketRole: BucketRole.MAINTAINER,
+    endpoint: "DELETE/bucket-roles",
   },
   ASSIGN_MAINTAINER_ROLE: {
     bucketRole: BucketRole.OWNER,
@@ -59,6 +60,7 @@ export const Action = {
   },
   REVOKE_MAINTAINER_ROLE: {
     bucketRole: BucketRole.OWNER,
+    endpoint: "DELETE/bucket-roles",
   },
   CHANGE_BUCKET_OWNERSHIP: {
     bucketRole: BucketRole.OWNER,
