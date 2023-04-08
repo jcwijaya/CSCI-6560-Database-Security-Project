@@ -116,15 +116,19 @@ bucketsRouter.post("/bucket-roles", auth, roleAuth, async (req, res) => {
       ],
     });
   }
-
   const query =
-    "INSERT INTO bucket_user(bucket_id, user_id, bucket_role) VALUES(?, ?, ?)";
-  const valuesArr = [bucket_name, targetUserId, targetRole];
-  await connection.query(query, valuesArr, (error, results) => {
-    if (error) throw error;
-    console.log(results);
-  });
+  "INSERT INTO bucket_user(bucket_id, user_id, bucket_role) VALUES(?, ?, ?)";
+const valuesArr = [bucket_name, targetUserId, targetRole];
+await connection.query(query, valuesArr, (error, results) => {
+  if (error) {
+    console.log("error occured when inserting into database");
+    return res.status(500).json(error);
+  }
+  console.log(results);
   return res.status(201).json(results);
+});
+ 
+ 
 });
 
 // @route    PATCH api/buckets/bucket-roles
@@ -154,10 +158,66 @@ bucketsRouter.patch("/bucket-roles", auth, roleAuth, async (req, res) => {
     "UPDATE bucket_user SET bucket_role = ? WHERE bucket_id = ? AND user_id = ? ";
   const valuesArr = [targetRole, bucket_name, targetUserId];
   await connection.query(query, valuesArr, (error, results) => {
-    if (error) throw error;
+    if (error) {
+      console.log("error occured when updating database");
+      return res.status(500).json(error);
+    }
     console.log(results);
     return res.status(201).json(results);
   });
 });
+
+// @route    DELETE api/buckets/bucket-roles
+// @desc     delete user role in specific bucket
+// @access   PRIVATE
+/* body parameters: 
+{
+  bucket_name: unique identifying name of bucket,
+  targetUserId: user_id in db that uniquely identifies user,
+  targetRole: string identifying role to be revoked from specified user (see models/enums/roles)
+}
+*/
+//TODO: need to update roleAuth
+bucketsRouter.delete("/bucket-roles", auth, roleAuth, async (req, res) => {
+  const { bucket_name, targetUserId, targetRole } = req.body;
+
+  if (!bucket_name || !targetUserId || !targetRole) {
+    return res.status(400).json({
+      errors: [
+        {
+          msg: "Bad request- please provide required information.",
+        },
+      ],
+    });
+  }
+try{
+  const query =
+  "DELETE FROM bucket_user WHERE bucket_id = ? AND user_id = ? AND  bucket_role = ?";
+  const params = [ bucket_name, targetUserId, targetRole];
+  let queryResults;
+  await databaseQuery(query, params).then(results => queryResults = results);
+  console.log("Deletion successful, affected rows: ", queryResults.affectedRows);
+  return res.status(201).json({
+    message: `Deletion successful, affected rows: ${queryResults.affectedRows}`
+  });
+}catch(err){
+  console.log(err);
+  return res.status(500).json({ error: err });
+}
+
+});
+
+function databaseQuery(query, params) {
+  return new Promise((resolve, reject) => {
+    connection.query(query, params, (err, results) => {
+      if (err) {
+        console.log("Database error: ", err);
+        reject(err);
+      }
+      console.log("Query results: ", results);
+      resolve(results);
+    });
+  });
+}
 
 export default bucketsRouter;
