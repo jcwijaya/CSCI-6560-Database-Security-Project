@@ -123,8 +123,8 @@ bucketsRouter.post("/bucket-roles", auth, roleAuth, async (req, res) => {
   await connection.query(query, valuesArr, (error, results) => {
     if (error) throw error;
     console.log(results);
+    return res.status(201).json(results);
   });
-  return res.status(201).json(results);
 });
 
 // @route    PATCH api/buckets/bucket-roles

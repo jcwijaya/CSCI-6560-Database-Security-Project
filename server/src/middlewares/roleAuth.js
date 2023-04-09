@@ -7,8 +7,8 @@ import connection from "../services/database.js";
 // Must be used after regular auth middleware.
 // Queries database to determine if user role is >= role requirement for action.
 const roleAuth = async (req, res, next) => {
-  // obtain user id attached to req from auth middleware
-  const { user_id } = req.user;
+  console.log(req.user);
+  console.log(req.body.targetUserId);
   // Must know bucket for which to get user role
   if (!req.body.bucket_name)
     return res.status(400).json({
@@ -68,7 +68,7 @@ const roleAuth = async (req, res, next) => {
           ],
         });
       }
-      if (results.length < 1 || results.length > 2)
+      if (results.length !== 2)
         return res.status(400).json({
           errors: [
             {
@@ -85,20 +85,13 @@ const roleAuth = async (req, res, next) => {
       results.forEach((result) => {
         if (result.user_id === req.user.user_id) {
           reqUserRole = BucketRole[result.bucket_role].value;
-        } else if (
-          req.body.targetUserId &&
-          result.user_id === req.body.targetUserId
-        ) {
+        } else if (result.user_id === req.body.targetUserId) {
           targetUserRole = BucketRole[result.bucket_role].value;
         }
       });
 
       console.log(`Requesting user's role in the bucket is ${reqUserRole}`);
-      console.log(
-        `Target user's role in the bucket is ${
-          targetUserRole ? targetUserRole : "NULL"
-        }`
-      );
+      console.log(`Target user's role in the bucket is ${targetUserRole}`);
 
       // Based on action, requesting user role, and target user role (if applies)-
       // check if authorization should be granted
@@ -124,13 +117,6 @@ const roleAuth = async (req, res, next) => {
 
       if (requiredRole <= reqUserRole) {
         console.log("Bucket role verified- action approved.");
-        /*
-        return res
-          .status(200)
-          .json(
-            `Requesting user approved to perform action ${actionEndpoint} with a role value of a ${reqUserRole} and a required role value of ${requiredRole}`
-          );
-          */
         next();
       } else {
         return res.status(403).json({
