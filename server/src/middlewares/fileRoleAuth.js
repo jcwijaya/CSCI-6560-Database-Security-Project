@@ -21,6 +21,8 @@ const fileRoleAuth = async (req, res, next) => {
     });
   const { bucket_name } = req.body;
 
+  //TODO: for delete fiel need to know file_id???
+
   // derive action from request and get permission value
   const actionEndpoint = req.method + req.url;
 
