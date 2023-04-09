@@ -8,6 +8,7 @@ import { FileRole } from "../../models/enums/Roles.js";
 import { Action } from "../../models/enums/Actions.js";
 import auth from "../../middlewares/auth.js";
 import fileRoleAuth from "../../middlewares/fileRoleAuth.js";
+import deleteFile from "../../services/deleteFile.js";
 
 const uploadsRouter = express.Router();
 
@@ -161,7 +162,7 @@ uploadsRouter.patch("/upload-file", auth, fileRoleAuth, async (req, res) => {
    [bucket_name, uploadedFileName]
  );
 
- // If file does exist, attempt upload
+ // If file exists, attempt upload
  if (fileData.length !== 1) {
    console.log("file does not exist - update failed");
 
@@ -196,79 +197,49 @@ uploadsRouter.patch("/upload-file", auth, fileRoleAuth, async (req, res) => {
  }
 
  return res.status(400).json({
-   msg: "Bad request- unable to upload file. The file might already be present in the bucket, in which case a file update is needed.",
+   msg: "Error occurred when attempting to upload the file to the cloud.",
  });
 
- /*
-  try {
-
-  const fileUrl = await uploader(bucket_name, req.file);
-  let urlArray = fileUrl.split("/");
-  uploadedFileName = urlArray[urlArray.length-1]
-
-
-  console.log("File upload successful: ", fileUrl, uploadedFileName)
-
-  metadata = await getMetadata(bucket_name, uploadedFileName);
-  console.log("Metadata was fetched successfully: ", metadata);
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({
-      errors: err.errors,
-    });
-  }
-
-  try {
-
-    //TODO: will move this check for the action into a new auth middleware 
-    // because we need it to verify the user's roles. Also use it to add the 
-    // file_id into the request if it already exists
-
-    //Check if file already exists
-    console.log("Checking if file exists...");
-    fileData = await databaseQuery( "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?", [bucket_name, uploadedFileName])
-    // await connection.query(
-    //   "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?",
-    //   [bucket_name, uploadedFileName],
-    //   function (error, results) {
-    //     if (error) {
-    //       console.log(error);
-    //       res.status(500).send({
-    //         message: "There was an error connecting to the database: ",
-    //         error,
-    //       });
-    //     }
-    //     console.log("Database query successful: ", results);
-    //     fileData = results;
-    //     console.log("result length: ", fileData.length);
-    //   }
-    // );
-
-    let action = null;
-    console.log("fileData", fileData);
-    //TODO: organize this better into separate functions with try catches in each
-    if(fileData === null || fileData.length === 0){
-      action = Action.CREATE_FILE;
-      console.log("Action is CREATE_FILE");
-      createFile(uploadedFileName, metadata, bucket_name, user_id);
-
-    }else {
-      action = Action.UPDATE_FILE;
-      console.log("Action is UPDATE_FILE");
-      updateFile(uploadedFileName, metadata, bucket_name, fileData);
-    }
-
-    return res.status(201).json({
-      bucket_name,
-      message: "File uploaded and database insert successful.", //TODO: Make message say create or edit
-    });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
-  */
-
 });
+
+//Soft delete the specified file from the bucket
+//Need request body to have bucket_name and fileName
+uploadsRouter.delete("/delete-file", auth, fileRoleAuth, async (req, res) => {
+  // extract vars and log them
+  let bucket_name = req.body.bucket_name;
+  let user_id = req.user.user_id;
+  let fileName = req.body.fileName;
+  console.log("request: ", req.body);
+  console.log("bucket: ", bucket_name);
+  console.log("user: ", user_id);
+ 
+  // check for necessary parameters
+  if (user_id == null || bucket_name == null || fileName == null) {
+    console.log("missing header, bucket_name, or fileName");
+    return res
+      .status(500)
+      .json({ error: "missing user_id, bucket_name, or fileName" });
+  }
+ 
+    try {
+
+      const response = await deleteFile(bucket_name, fileName);
+      console.log("File deletion successful: ", response);
+    
+      const updateRes = await databaseQuery(
+        "UPDATE `file` SET isActive = false WHERE bucket_id = ? AND file_name = ? AND isActive = true",
+        [bucket_name, fileName]
+      );
+      console.log("Database update successful: ", updateRes);
+      return res.status(200).json(updateRes);
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({
+        errors: err.errors,
+      });
+    }
+ 
+ });
 
 
 // Async function for handling insertion of file data in database.
@@ -321,16 +292,14 @@ async function createFile(uploadedFileName, metadata, bucket_name) {
 async function updateFile(uploadedFileName, metadata, bucket_name, fileData) {
   try {
     let file_id = fileData[0].file_id;
-    //update file table: make isActive false for existing rows for this file
-    //insert new row with isActive=true
 
-    await databaseQuery(
-      "UPDATE `file` SET isActive = false WHERE file_id = ? and isActive = true",
+    const updateRes = await databaseQuery(
+      "UPDATE `file` SET isActive = false WHERE file_id = ? AND isActive = true",
       [file_id]
     );
-    console.log("Database update successful");
+    console.log("Database update successful: ", updateRes);
 
-    await databaseQuery("INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)", [
+   const insertRes = await databaseQuery("INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)", [
       file_id,
       bucket_name,
       uploadedFileName,
@@ -338,12 +307,7 @@ async function updateFile(uploadedFileName, metadata, bucket_name, fileData) {
       true,
       new Date(metadata.timeCreated),
     ]);
-    console.log(
-      "Database insert successful for file ",
-      file_id,
-      bucket_name,
-      uploadedFileName
-    );
+    console.log(`Database insert successful for file ${file_id}, ${uploadedFileName}, bucket ${bucket_name} : ${insertRes}`);
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: err });
