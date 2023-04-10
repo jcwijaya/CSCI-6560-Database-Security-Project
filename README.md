@@ -75,4 +75,6 @@ NOTE: All of these endpoints must include a valid JSON web token in the headers 
 | PATCH  | /api/buckets/bucket-roles | `{"bucket_name:"your_bucket_name", "targetUserId":"id_of_target_user", "targetRole":"role_to_make_target_user" }`|Update a user's bucket role|
 | DELETE  | /api/buckets/bucket-roles | `{"bucket_name:"your_bucket_name", "targetUserId":"id_of_target_user", "targetRole":"role_to_make_target_user" }`|Revoke a user's bucket role|
 | POST  | /api/uploads/upload-file | `{"uploaded_file": "your_file_to_upload"` as [form-data](https://developer.mozilla.org/en-US/docs/Learn/Forms/Sending_and_retrieving_form_data),`"bucket_name": "your_bucket_name"}`|Upload a file to a bucket|
+| PATCH  | /api/uploads/upload-file | `{"uploaded_file": "your_file_to_upload"` as [form-data](https://developer.mozilla.org/en-US/docs/Learn/Forms/Sending_and_retrieving_form_data),`"bucket_name": "your_bucket_name"}`|Update a file in a bucket|
+| DELETE  | /api/uploads/delete-file | `{"file_name": "your_file_to_be_deleted"`,`"bucket_name": "your_bucket_name"}`|Delete file from a bucket|
 | GET   | /api/downloads/download-file | `{"bucket_name:"your_bucket_name", "destPath": "full_file_destination_path_with_trailing_\", "file_id": "id_of_file_to_be_downloaded"}`|Download file|
