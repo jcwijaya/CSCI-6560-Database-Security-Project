@@ -10,6 +10,7 @@ import { BucketRole } from "../models/enums/Roles.js";
 const fileRoleAuth = async (req, res, next) => {
   // obtain user id attached to req from auth middleware
   const { user_id } = req.user;
+
   // Must know bucket for which to get user role
   if (!req.body.bucket_name)
     return res.status(400).json({
@@ -57,12 +58,21 @@ const fileRoleAuth = async (req, res, next) => {
       case Action.VIEW_FILE.endpoint:
         requiredRole = Action.VIEW_FILE.bucketRole.value;
         break;
+      case Action.UPDATE_FILE.endpoint:
+        requiredRole = Action.UPDATE_FILE.bucketRole.value;
+        break;
+      case Action.SOFT_DELETE_FILE.endpoint:
+        requiredRole = Action.SOFT_DELETE_FILE.bucketRole.value;
+        break;
       default:
         return res.status(500).json({
           msg: "Uknown action.",
         });
     }
-
+    console.log("db results for role: ", results[0].bucket_role);
+    console.log("Role: ", role);
+    console.log("Required role: ", requiredRole);
+    
     if (role < requiredRole) {
       return res.status(403).json({
         msg: "Unauthorized to perform file action",

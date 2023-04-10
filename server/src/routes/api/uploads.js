@@ -8,6 +8,7 @@ import { FileRole } from "../../models/enums/Roles.js";
 import { Action } from "../../models/enums/Actions.js";
 import auth from "../../middlewares/auth.js";
 import fileRoleAuth from "../../middlewares/fileRoleAuth.js";
+import deleteFile from "../../services/deleteFile.js";
 
 const uploadsRouter = express.Router();
 
@@ -60,6 +61,7 @@ uploadsRouter.post("/upload-file", auth, fileRoleAuth, async (req, res) => {
   console.log("bucket: ", bucket_name);
   console.log("user: ", user_id);
   console.log("file: ", file);
+  console.log("uploadedFileName: ", uploadedFileName);
 
   // check for necessary parameters
   if (user_id == null || bucket_name == null || file == null) {
@@ -68,7 +70,7 @@ uploadsRouter.post("/upload-file", auth, fileRoleAuth, async (req, res) => {
       .status(500)
       .json({ error: "missing user_id, bucket_name, or file" });
   }
-
+  uploadedFileName = file.originalname.replace(/ /g, "_");
   // query database to check if file exists (it shouldn't)
   fileData = await databaseQuery(
     "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?",
@@ -117,75 +119,121 @@ uploadsRouter.post("/upload-file", auth, fileRoleAuth, async (req, res) => {
     msg: "Bad request- unable to upload file. The file might already be present in the bucket, in which case a file update is needed.",
   });
 
-  /*
-  try {
-
-  const fileUrl = await uploader(bucket_name, req.file);
-  let urlArray = fileUrl.split("/");
-  uploadedFileName = urlArray[urlArray.length-1]
-
-
-  console.log("File upload successful: ", fileUrl, uploadedFileName)
-
-  metadata = await getMetadata(bucket_name, uploadedFileName);
-  console.log("Metadata was fetched successfully: ", metadata);
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({
-      errors: err.errors,
-    });
-  }
-
-  try {
-
-    //TODO: will move this check for the action into a new auth middleware 
-    // because we need it to verify the user's roles. Also use it to add the 
-    // file_id into the request if it already exists
-
-    //Check if file already exists
-    console.log("Checking if file exists...");
-    fileData = await databaseQuery( "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?", [bucket_name, uploadedFileName])
-    // await connection.query(
-    //   "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?",
-    //   [bucket_name, uploadedFileName],
-    //   function (error, results) {
-    //     if (error) {
-    //       console.log(error);
-    //       res.status(500).send({
-    //         message: "There was an error connecting to the database: ",
-    //         error,
-    //       });
-    //     }
-    //     console.log("Database query successful: ", results);
-    //     fileData = results;
-    //     console.log("result length: ", fileData.length);
-    //   }
-    // );
-
-    let action = null;
-    console.log("fileData", fileData);
-    //TODO: organize this better into separate functions with try catches in each
-    if(fileData === null || fileData.length === 0){
-      action = Action.CREATE_FILE;
-      console.log("Action is CREATE_FILE");
-      createFile(uploadedFileName, metadata, bucket_name, user_id);
-
-    }else {
-      action = Action.UPDATE_FILE;
-      console.log("Action is UPDATE_FILE");
-      updateFile(uploadedFileName, metadata, bucket_name, fileData);
-    }
-
-    return res.status(201).json({
-      bucket_name,
-      message: "File uploaded and database insert successful.", //TODO: Make message say create or edit
-    });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ error: err });
-  }
-  */
 });
+
+uploadsRouter.patch("/upload-file", auth, fileRoleAuth, async (req, res) => {
+ // extract vars and log them
+ console.log("File patch attempted:");
+ let bucket_name = req.body.bucket_name;
+ let user_id = req.user.user_id;
+ let file = req.file;
+ let uploadedFileName = null;
+ let metadata = null;
+ let fileData = [];
+
+ console.log("request: ", req.body);
+ console.log("bucket: ", bucket_name);
+ console.log("user: ", user_id);
+ console.log("file: ", file);
+
+ // check for necessary parameters
+ if (user_id == null || bucket_name == null || file == null) {
+   console.log("missing header, bucket_name, or file");
+   return res
+     .status(500)
+     .json({ error: "missing user_id, bucket_name, or file" });
+ }
+
+uploadedFileName = file.originalname.replace(/ /g, "_");
+
+ // query database to check that file already exists
+ fileData = await databaseQuery(
+   "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?",
+   [bucket_name, uploadedFileName]
+ );
+
+ // If file exists, attempt upload
+ if (fileData.length >= 1) {
+
+   try {
+     // upload file to bucket
+     console.log("Attempting file upload");
+     const fileUrl = await uploader(bucket_name, file);
+     let urlArray = fileUrl.split("/");
+     uploadedFileName = urlArray[urlArray.length - 1];
+
+     console.log("File upload successful: ", fileUrl, uploadedFileName);
+
+     // get metadata for file (to have upload timestamp and generation number extracted)
+     metadata = await getMetadata(bucket_name, uploadedFileName);
+     console.log("Metadata was fetched successfully: ", metadata);
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({
+        errors: err.errors,
+      });
+    }
+     // file upload successful, so need to update isActive, then insert new row in database
+     try {
+
+       const updateResults = await updateFile(uploadedFileName, metadata, bucket_name, fileData)
+       return res.status(201).json({
+        message: "File has been patched successfully",
+        result: updateResults
+       });
+     } catch (err) {
+       return res.status(500).json({
+         errors: err.errors,
+       });
+     }
+ }
+ 
+ return res.status(400).json({
+  msg: "Bad request- unable to upload file. The file might not be present in the bucket.",
+});
+
+});
+
+
+uploadsRouter.delete("/delete-file", auth, fileRoleAuth, async (req, res) => {
+  // extract vars and log them
+  console.log("Delete file attempted");
+  let bucket_name = req.body.bucket_name;
+  let user_id = req.user.user_id;
+  let fileName = req.body.file_name;
+  console.log("request: ", req.body);
+  console.log("bucket: ", bucket_name);
+  console.log("user: ", user_id);
+  console.log("fileName: ", fileName);
+ 
+  // check for necessary parameters
+  if (user_id == null || bucket_name == null || fileName == null) {
+    console.log("missing header, bucket_name, or fileName");
+    return res
+      .status(500)
+      .json({ error: "missing user_id, bucket_name, or fileName" });
+  }
+ 
+    try {
+
+      const response = await deleteFile(bucket_name, fileName);
+      console.log("File deletion successful: ", response);
+    
+      const updateRes = await databaseQuery(
+        "UPDATE `file` SET isActive = false WHERE bucket_id = ? AND file_name = ? AND isActive = true",
+        [bucket_name, fileName]
+      );
+      console.log("Database update successful: ", updateRes);
+      return res.status(200).json(updateRes);
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({
+        errors: err.errors,
+      });
+    }
+ 
+ });
+
 
 // Async function for handling insertion of file data in database.
 // This should be called after the file is uploaded into a bucket.
@@ -228,20 +276,6 @@ async function createFile(uploadedFileName, metadata, bucket_name) {
     //   FileRole.FILE_OWNER.string
     // );
 
-    // connection.query(
-    //   "INSERT INTO `file_user` VALUES (?, ?, ?)",
-    //   [file_id, user_id, FileRole.FILE_OWNER.string],
-    //   function (error, results) {
-    //     if (error) {
-    //       console.log("Database error: ", error);
-    //       return res.status(500).send({
-    //         message: "There was an error connecting to the database: ",
-    //         error,
-    //       });
-    //     }
-    //     console.log("Database insert successful for user file role ", user_id, file_id, FileRole.FILE_OWNER.string );
-    //   }
-    // );
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: err });
@@ -251,31 +285,14 @@ async function createFile(uploadedFileName, metadata, bucket_name) {
 async function updateFile(uploadedFileName, metadata, bucket_name, fileData) {
   try {
     let file_id = fileData[0].file_id;
-    //update file table: make isActive false for existing rows for this file
-    //insert new row with isActive=true
 
-    await databaseQuery(
-      "UPDATE `file` SET isActive = false WHERE file_id = ? and isActive = true",
+    const updateRes = await databaseQuery(
+      "UPDATE `file` SET isActive = false WHERE file_id = ? AND isActive = true",
       [file_id]
     );
-    console.log("Database update successful");
+    console.log("Database update successful: ", updateRes);
 
-    // connection.query(
-    //   "UPDATE `file` SET isActive = false WHERE file_id = ? and isActive = true",
-    //   [file_id],
-    //   function (error, results) {
-    //     if (error) {
-    //       console.log("Database error: ", error);
-    //       return res.status(500).send({
-    //         message: "There was an error connecting to the database: ",
-    //         error,
-    //       });
-    //     }
-    //     console.log("Database update successful");
-    //   }
-    // );
-
-    await databaseQuery("INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)", [
+   const insertRes = await databaseQuery("INSERT INTO `file` VALUES (?, ?, ?, ?, ?, ?)", [
       file_id,
       bucket_name,
       uploadedFileName,
@@ -283,12 +300,8 @@ async function updateFile(uploadedFileName, metadata, bucket_name, fileData) {
       true,
       new Date(metadata.timeCreated),
     ]);
-    console.log(
-      "Database insert successful for file ",
-      file_id,
-      bucket_name,
-      uploadedFileName
-    );
+    console.log(`Database insert successful for file ${file_id}, ${uploadedFileName}, bucket ${bucket_name} : ${insertRes}`);
+    return insertRes;
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: err });

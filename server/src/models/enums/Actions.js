@@ -19,11 +19,12 @@ export const Action = {
   UPDATE_FILE: {
     bucketRole: BucketRole.EDITOR,
     fileRole: FileRole.FILE_EDITOR,
-    endpoint: "POST/upload-file",
+    endpoint: "PATCH/upload-file",
   },
   SOFT_DELETE_FILE: {
     bucketRole: BucketRole.MAINTAINER,
     fileRole: FileRole.FILE_OWNER,
+    endpoint: "DELETE/delete-file"
   },
   CHANGE_FILE_VERSION: {
     bucketRole: BucketRole.MAINTAINER,
