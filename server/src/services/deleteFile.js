@@ -9,9 +9,9 @@ const deleteFile = (bucket_id, fileName) =>
     if (!fileName || !bucket_id) reject("File name or bucket name is missing");
     console.log(fileName);
     try{
-         bucket.file(fileName).delete().then(result => result[0]);
+         const result = bucket.file(fileName).delete().then(result => result[0]);
         console.log(`Deletion successful for file: ${fileName} in bucket: ${bucket_id}`);
-        resolve(metadata);
+        resolve(result);
     }
     catch(err){
         console.log(`Error occurred when deleting file: ${fileName} in bucket: ${bucket_id}, `, err);

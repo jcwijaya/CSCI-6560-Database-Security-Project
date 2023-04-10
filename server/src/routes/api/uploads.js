@@ -160,17 +160,14 @@ uploadsRouter.patch("/upload-file", auth, fileRoleAuth, async (req, res) => {
 
 uploadedFileName = file.originalname.replace(/ /g, "_");
 
-console.log("Querying Database");
  // query database to check that file already exists
  fileData = await databaseQuery(
    "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?",
    [bucket_name, uploadedFileName]
  );
- console.log("Finished querying database")
 
  // If file exists, attempt upload
  if (fileData.length >= 1) {
-   console.log("file exists");
 
    try {
      // upload file to bucket
@@ -203,7 +200,6 @@ console.log("Querying Database");
          errors: err.errors,
        });
      }
-
  }
  
  return res.status(400).json({
@@ -212,16 +208,17 @@ console.log("Querying Database");
 
 });
 
-//Soft delete the specified file from the bucket
-//Need request body to have bucket_name and fileName
+
 uploadsRouter.delete("/delete-file", auth, fileRoleAuth, async (req, res) => {
   // extract vars and log them
+  console.log("Delete file attempted");
   let bucket_name = req.body.bucket_name;
   let user_id = req.user.user_id;
-  let fileName = req.body.fileName;
+  let fileName = req.body.file_name;
   console.log("request: ", req.body);
   console.log("bucket: ", bucket_name);
   console.log("user: ", user_id);
+  console.log("fileName: ", fileName);
  
   // check for necessary parameters
   if (user_id == null || bucket_name == null || fileName == null) {

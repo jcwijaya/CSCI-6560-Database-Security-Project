@@ -12,8 +12,6 @@ const uploader = (bucket_id, file) =>
     console.log(file);
     const { originalname, buffer } = file;
 
-    console.log('uploader: ', bucket_id, file);
-
     const blob = bucket.file(originalname.replace(/ /g, "_"));
     const blobStream = blob.createWriteStream({
       resumable: false,
