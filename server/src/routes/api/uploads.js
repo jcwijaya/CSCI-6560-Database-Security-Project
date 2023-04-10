@@ -54,13 +54,14 @@ uploadsRouter.post("/upload-file", auth, fileRoleAuth, async (req, res) => {
   let bucket_name = req.body.bucket_name;
   let user_id = req.user.user_id;
   let file = req.file;
-  let uploadedFileName = file.originalname.replace(/ /g, "_");
+  let uploadedFileName = null;
   let metadata = null;
   let fileData = [];
   console.log("request: ", req.body);
   console.log("bucket: ", bucket_name);
   console.log("user: ", user_id);
   console.log("file: ", file);
+  console.log("uploadedFileName: ", uploadedFileName);
 
   // check for necessary parameters
   if (user_id == null || bucket_name == null || file == null) {
@@ -69,7 +70,7 @@ uploadsRouter.post("/upload-file", auth, fileRoleAuth, async (req, res) => {
       .status(500)
       .json({ error: "missing user_id, bucket_name, or file" });
   }
-
+  uploadedFileName = file.originalname.replace(/ /g, "_");
   // query database to check if file exists (it shouldn't)
   fileData = await databaseQuery(
     "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?",
@@ -136,13 +137,14 @@ uploadsRouter.post("/upload-file", auth, fileRoleAuth, async (req, res) => {
 
 uploadsRouter.patch("/upload-file", auth, fileRoleAuth, async (req, res) => {
  // extract vars and log them
- console.log("File upload attempted:");
+ console.log("File patch attempted:");
  let bucket_name = req.body.bucket_name;
  let user_id = req.user.user_id;
  let file = req.file;
- let uploadedFileName = file.originalname.replace(/ /g, "_")
+ let uploadedFileName = null;
  let metadata = null;
  let fileData = [];
+
  console.log("request: ", req.body);
  console.log("bucket: ", bucket_name);
  console.log("user: ", user_id);
@@ -156,19 +158,24 @@ uploadsRouter.patch("/upload-file", auth, fileRoleAuth, async (req, res) => {
      .json({ error: "missing user_id, bucket_name, or file" });
  }
 
+uploadedFileName = file.originalname.replace(/ /g, "_");
+
+console.log("Querying Database");
  // query database to check that file already exists
  fileData = await databaseQuery(
    "SELECT * FROM `file` WHERE bucket_id = ? AND file_name = ?",
    [bucket_name, uploadedFileName]
  );
+ console.log("Finished querying database")
 
  // If file exists, attempt upload
- if (fileData.length !== 1) {
-   console.log("file does not exist - update failed");
+ if (fileData.length >= 1) {
+   console.log("file exists");
 
    try {
      // upload file to bucket
-     const fileUrl = await uploader(bucket_name, req.file);
+     console.log("Attempting file upload");
+     const fileUrl = await uploader(bucket_name, file);
      let urlArray = fileUrl.split("/");
      uploadedFileName = urlArray[urlArray.length - 1];
 
@@ -177,28 +184,31 @@ uploadsRouter.patch("/upload-file", auth, fileRoleAuth, async (req, res) => {
      // get metadata for file (to have upload timestamp and generation number extracted)
      metadata = await getMetadata(bucket_name, uploadedFileName);
      console.log("Metadata was fetched successfully: ", metadata);
-
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({
+        errors: err.errors,
+      });
+    }
      // file upload successful, so need to update isActive, then insert new row in database
      try {
 
        const updateResults = await updateFile(uploadedFileName, metadata, bucket_name, fileData)
-       return res.status(201).json(updateResults);
+       return res.status(201).json({
+        message: "File has been patched successfully",
+        result: updateResults
+       });
      } catch (err) {
        return res.status(500).json({
          errors: err.errors,
        });
      }
-   } catch (err) {
-     console.log(err);
-     return res.status(500).json({
-       errors: err.errors,
-     });
-   }
- }
 
+ }
+ 
  return res.status(400).json({
-   msg: "Error occurred when attempting to upload the file to the cloud.",
- });
+  msg: "Bad request- unable to upload file. The file might not be present in the bucket.",
+});
 
 });
 
@@ -308,6 +318,7 @@ async function updateFile(uploadedFileName, metadata, bucket_name, fileData) {
       new Date(metadata.timeCreated),
     ]);
     console.log(`Database insert successful for file ${file_id}, ${uploadedFileName}, bucket ${bucket_name} : ${insertRes}`);
+    return insertRes;
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: err });
