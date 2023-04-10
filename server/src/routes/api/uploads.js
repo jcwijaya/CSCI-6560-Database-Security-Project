@@ -121,20 +121,6 @@ uploadsRouter.post("/upload-file", auth, fileRoleAuth, async (req, res) => {
 
 });
 
-
-//TODO:
-//Auth:
-//Check that user has correct bucket-role to update file
-//Don't implement file-roles
-
-//--------------------------------
-//Will have same request body as create-file endpoint
-// Check that file already exists
-//upload file
-//fetch metadata - upload time, generation number
-//update DB row to set isActive = false, add row to DB with isActive = true
-
-
 uploadsRouter.patch("/upload-file", auth, fileRoleAuth, async (req, res) => {
  // extract vars and log them
  console.log("File patch attempted:");
