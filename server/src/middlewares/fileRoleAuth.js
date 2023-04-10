@@ -48,9 +48,6 @@ const fileRoleAuth = async (req, res, next) => {
         ],
       });
     }
-
-    // reqUserRole = BucketRole[result.bucket_role].value;
-    //const role = results[0].bucket_role;
     const role = BucketRole[results[0].bucket_role].value;
     let requiredRole;
     switch (actionEndpoint) {
