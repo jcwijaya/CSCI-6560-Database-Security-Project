@@ -117,18 +117,16 @@ bucketsRouter.post("/bucket-roles", auth, roleAuth, async (req, res) => {
     });
   }
   const query =
-  "INSERT INTO bucket_user(bucket_id, user_id, bucket_role) VALUES(?, ?, ?)";
-const valuesArr = [bucket_name, targetUserId, targetRole];
-await connection.query(query, valuesArr, (error, results) => {
-  if (error) {
-    console.log("error occured when inserting into database");
-    return res.status(500).json(error);
-  }
-  console.log(results);
-  return res.status(201).json(results);
-});
- 
- 
+    "INSERT INTO bucket_user(bucket_id, user_id, bucket_role) VALUES(?, ?, ?)";
+  const valuesArr = [bucket_name, targetUserId, targetRole];
+  await connection.query(query, valuesArr, (error, results) => {
+    if (error) {
+      console.log("error occured when inserting into database");
+      return res.status(500).json(error);
+    }
+    console.log(results);
+    return res.status(201).json(results);
+  });
 });
 
 // @route    PATCH api/buckets/bucket-roles
@@ -189,21 +187,25 @@ bucketsRouter.delete("/bucket-roles", auth, roleAuth, async (req, res) => {
       ],
     });
   }
-try{
-  const query =
-  "DELETE FROM bucket_user WHERE bucket_id = ? AND user_id = ? AND  bucket_role = ?";
-  const params = [ bucket_name, targetUserId, targetRole];
-  let queryResults;
-  await databaseQuery(query, params).then(results => queryResults = results);
-  console.log("Deletion successful, affected rows: ", queryResults.affectedRows);
-  return res.status(201).json({
-    message: `Deletion successful, affected rows: ${queryResults.affectedRows}`
-  });
-}catch(err){
-  console.log(err);
-  return res.status(500).json({ error: err });
-}
-
+  try {
+    const query =
+      "DELETE FROM bucket_user WHERE bucket_id = ? AND user_id = ? AND  bucket_role = ?";
+    const params = [bucket_name, targetUserId, targetRole];
+    let queryResults;
+    await databaseQuery(query, params).then(
+      (results) => (queryResults = results)
+    );
+    console.log(
+      "Deletion successful, affected rows: ",
+      queryResults.affectedRows
+    );
+    return res.status(201).json({
+      message: `Deletion successful, affected rows: ${queryResults.affectedRows}`,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: err });
+  }
 });
 
 function databaseQuery(query, params) {
