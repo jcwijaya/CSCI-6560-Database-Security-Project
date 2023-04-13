@@ -22,7 +22,7 @@ INSTALL PLUGIN authentication_windows SONAME 'authentication_windows.dll';
 SET GLOBAL authentication_policy='caching_sha2_password,*,'; #1 * is defualt 2 *'s means  2 factor
 
 #Create role, assign all privelages to the role
-create role if not exists 'Developer';
+create role 'Developer';
 grant create role, create tablespace, create user, create view, grant option, process, reload, select, show databases, show view, shutdown on *.* to 'Developer';
 show grants for 'Developer';
 #Developer is now a role with Select Privelages privelages
